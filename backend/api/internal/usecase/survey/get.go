@@ -27,7 +27,7 @@ func NewGet(storeRepo store_domain.Repo, surveyRepo survey_domain.Repo) Get {
 }
 
 func (u *get) ByStoreID(ctx context.Context, id store_vo.ID) ([]survey_domain.Survey, error) {
-	return u.surveyRepo.FindByStore(ctx, id)
+	return nil, nil
 }
 
 func (u *get) ByPrefectures(ctx context.Context, pref string) ([]survey_domain.Survey, error) {
