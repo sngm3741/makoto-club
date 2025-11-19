@@ -1,0 +1,17 @@
+services:
+  makoto-club-api:
+    image: ghcr.io/${GHCR_USER}/makoto-club-api:latest
+    build:
+      context: ./api
+      dockerfile: Dockerfile
+    container_name: makoto-club-api
+    env_file:
+      - ./env/shared.env
+      - ${ENVIRONMENT_FILE:-./env/production.env}
+    networks:
+      - backend
+    restart: unless-stopped
+networks:
+  backend:
+    external: true
+    name: infra-backend-network
