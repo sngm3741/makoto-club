@@ -31,7 +31,11 @@ func (h *handler) GetSurveysByStoreID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	storeID := store_vo.NewID(storeIDParam)
+	storeID, err := store_vo.NewID(storeIDParam)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
 
 	surveys, err := h.surveyService.GetByStoreID(ctx, storeID)
 	if err != nil {
