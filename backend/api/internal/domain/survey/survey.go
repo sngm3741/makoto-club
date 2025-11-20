@@ -16,7 +16,7 @@ type Survey struct {
 
 	storeBranch   *store_vo.BranchName
 	storePref     store_vo.Prefecture
-	storeArea     store_vo.Area
+	storeArea     *store_vo.Area
 	storeIndustry store_vo.Industry
 	storeGenre    *store_vo.Genre
 
@@ -45,6 +45,15 @@ func WithStoreBranch(branch store_vo.BranchName) Option {
 	return func(s *Survey) error {
 		b := branch
 		s.storeBranch = &b
+		return nil
+	}
+}
+
+// WithStoreArea は店舗エリアを設定する。
+func WithStoreArea(area store_vo.Area) Option {
+	return func(s *Survey) error {
+		a := area
+		s.storeArea = &a
 		return nil
 	}
 }
@@ -109,7 +118,6 @@ func NewSurvey(
 	storeID store_vo.ID,
 	storeName store_vo.Name,
 	storePrefecture store_vo.Prefecture,
-	storeArea store_vo.Area,
 	storeIndustry store_vo.Industry,
 	visited survey_vo.VisitedPeriod,
 	workType survey_vo.WorkType,
@@ -125,7 +133,6 @@ func NewSurvey(
 		storeID:       storeID,
 		storeName:     storeName,
 		storePref:     storePrefecture,
-		storeArea:     storeArea,
 		storeIndustry: storeIndustry,
 		visitedPeriod: visited,
 		workType:      workType,
@@ -162,7 +169,7 @@ func (s *Survey) validate() error {
 	if !s.storePref.Validate() {
 		return errors.New("店舗都道府県の入力値が不正です")
 	}
-	if !s.storeArea.Validate() {
+	if s.storeArea != nil && !s.storeArea.Validate() {
 		return errors.New("店舗エリアの入力値が不正です")
 	}
 	if !s.storeIndustry.Validate() {
@@ -253,7 +260,7 @@ func (s *Survey) StorePrefecture() store_vo.Prefecture {
 }
 
 // StoreArea は店舗のエリアを返す。
-func (s *Survey) StoreArea() store_vo.Area {
+func (s *Survey) StoreArea() *store_vo.Area {
 	return s.storeArea
 }
 

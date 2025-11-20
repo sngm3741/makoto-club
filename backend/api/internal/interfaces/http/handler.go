@@ -3,9 +3,11 @@ package interfaces
 import (
 	"encoding/json"
 	"net/http"
+	"strconv"
 
 	"github.com/go-chi/chi/v5"
 
+	common_vo "github.com/sngm3741/makoto-club-services/api/internal/domain/vo/common"
 	store_vo "github.com/sngm3741/makoto-club-services/api/internal/domain/vo/store"
 	survey_usecase "github.com/sngm3741/makoto-club-services/api/internal/usecase/survey"
 )
@@ -37,7 +39,9 @@ func (h *handler) GetSurveysByStoreID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	surveys, err := h.surveyService.GetByStoreID(ctx, storeID)
+	pagination := paginationFromRequest(r)
+
+	surveys, err := h.surveyService.GetByStore(ctx, storeID, pagination)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -48,4 +52,22 @@ func (h *handler) GetSurveysByStoreID(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+}
+
+func paginationFromRequest(r *http.Request) common_vo.Pagination {
+	query := r.URL.Query()
+	page := parseQueryInt(query.Get("page"))
+	limit := parseQueryInt(query.Get("limit"))
+	return common_vo.NewPagination(page, limit)
+}
+
+func parseQueryInt(value string) int {
+	if value == "" {
+		return 0
+	}
+	v, err := strconv.Atoi(value)
+	if err != nil {
+		return 0
+	}
+	return v
 }

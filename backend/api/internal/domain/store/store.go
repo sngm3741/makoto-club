@@ -13,7 +13,7 @@ type Store struct {
 	name          store_vo.Name
 	branchName    *store_vo.BranchName
 	prefecture    store_vo.Prefecture
-	area          store_vo.Area
+	area          *store_vo.Area
 	industry      store_vo.Industry
 	genre         *store_vo.Genre
 	businessHours *store_vo.BusinessHours
@@ -31,6 +31,15 @@ func WithBranchName(branch store_vo.BranchName) Option {
 	return func(s *Store) error {
 		b := branch
 		s.branchName = &b
+		return nil
+	}
+}
+
+// WithArea は店舗エリアを設定する。
+func WithArea(area store_vo.Area) Option {
+	return func(s *Store) error {
+		a := area
+		s.area = &a
 		return nil
 	}
 }
@@ -91,7 +100,6 @@ func NewStore(
 	id store_vo.ID,
 	name store_vo.Name,
 	prefecture store_vo.Prefecture,
-	area store_vo.Area,
 	industry store_vo.Industry,
 	opts ...Option,
 ) (*Store, error) {
@@ -99,7 +107,6 @@ func NewStore(
 		id:         id,
 		name:       name,
 		prefecture: prefecture,
-		area:       area,
 		industry:   industry,
 	}
 
@@ -125,7 +132,7 @@ func (s *Store) validate() error {
 	if !s.prefecture.Validate() {
 		return errors.New("都道府県の入力値が不正です")
 	}
-	if !s.area.Validate() {
+	if s.area != nil && !s.area.Validate() {
 		return errors.New("エリアの入力値が不正です")
 	}
 	if !s.industry.Validate() {
@@ -176,7 +183,7 @@ func (s *Store) Prefecture() store_vo.Prefecture {
 }
 
 // Area はエリアを返す。
-func (s *Store) Area() store_vo.Area {
+func (s *Store) Area() *store_vo.Area {
 	return s.area
 }
 
