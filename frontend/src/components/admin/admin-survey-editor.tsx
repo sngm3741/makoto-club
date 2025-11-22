@@ -609,6 +609,7 @@ export function AdminSurveyEditor({ initialSurvey, mode = 'edit' }: AdminSurveyE
           imageUrls: (updated.imageUrls ?? []).map((url, index) => ({
             url,
             name: `画像${index + 1}`,
+            size: 0,
           })),
          rating: updated.rating.toString(),
        });
