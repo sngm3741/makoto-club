@@ -15,7 +15,7 @@ const (
 // ErrInvalidRating はスコアが範囲外の場合に返される。
 var ErrInvalidRating = errors.New("総評は0〜5の範囲で入力してください")
 
-// Rating は0.1刻みの総合評価を表す。
+// Rating は0.1刻みの総合評価を表す値オブジェクト。
 type Rating struct {
 	value float64
 }

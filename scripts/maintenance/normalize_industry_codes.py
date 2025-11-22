@@ -3,8 +3,8 @@
 MongoDB 内の業種コードを日本語ラベルで統一するスクリプト。
 
 対象:
-  - stores コレクションの industryCodes (配列)
-  - reviews コレクションの industryCode (文字列)
+  - stores コレクションの industry / industryCodes
+  - surveys コレクションの storeIndustry (文字列)
 
 実行例:
   MONGO_URI="mongodb+srv://..." \
@@ -88,9 +88,9 @@ def parse_args() -> argparse.Namespace:
         help="実際に更新を適用します。指定しない場合は dry-run になります。",
     )
     parser.add_argument(
-        "--review-collection",
-        default=os.getenv("REVIEW_COLLECTION", os.getenv("SURVEY_COLLECTION", "reviews")),
-        help="レビューのコレクション名 (default: %(default)s)",
+        "--survey-collection",
+        default=os.getenv("SURVEY_COLLECTION", "surveys"),
+        help="アンケートのコレクション名 (default: %(default)s)",
     )
     parser.add_argument(
         "--store-collection",
@@ -112,29 +112,38 @@ def parse_args() -> argparse.Namespace:
 
 def normalize_stores(collection: Collection, apply_changes: bool) -> int:
     updated_count = 0
-    for doc in collection.find({}, {"industryCodes": 1}):
+    for doc in collection.find({}, {"industryCodes": 1, "industry": 1}):
         doc_id = doc.get("_id")
-        original = doc.get("industryCodes") or []
-        normalized = normalize_codes(original)
-        if normalized == original:
-            continue
-        updated_count += 1
-        if apply_changes:
-            collection.update_one({"_id": doc_id}, {"$set": {"industryCodes": normalized}})
+        if "industryCodes" in doc:
+            original_list = doc.get("industryCodes") or []
+            normalized_list = normalize_codes(original_list)
+            if normalized_list == original_list:
+                continue
+            updated_count += 1
+            if apply_changes:
+                collection.update_one({"_id": doc_id}, {"$set": {"industryCodes": normalized_list}})
+        else:
+            original = doc.get("industry")
+            normalized = normalize_code(original)
+            if normalized == original:
+                continue
+            updated_count += 1
+            if apply_changes:
+                collection.update_one({"_id": doc_id}, {"$set": {"industry": normalized}})
     return updated_count
 
 
-def normalize_reviews(collection: Collection, apply_changes: bool) -> int:
+def normalize_surveys(collection: Collection, apply_changes: bool) -> int:
     updated_count = 0
-    for doc in collection.find({}, {"industryCode": 1}):
+    for doc in collection.find({}, {"storeIndustry": 1, "industryCode": 1}):
         doc_id = doc.get("_id")
-        original = doc.get("industryCode")
+        original = doc.get("storeIndustry") or doc.get("industryCode")
         normalized = normalize_code(original)
         if normalized == original:
             continue
         updated_count += 1
         if apply_changes:
-            update = {"industryCode": normalized}
+            update = {"storeIndustry": normalized}
             collection.update_one({"_id": doc_id}, {"$set": update})
     return updated_count
 
@@ -146,19 +155,19 @@ def main() -> int:
     client = MongoClient(args.uri)
     database = client[args.database]
     stores = database[args.store_collection]
-    reviews = database[args.review_collection]
+    surveys = database[args.survey_collection]
 
     print(f"== 対象データベース: {args.database}")
     print(f"== 店舗コレクション: {args.store_collection}")
-    print(f"== レビューコレクション: {args.review_collection}")
+    print(f"== アンケートコレクション: {args.survey_collection}")
     print(f"== モード: {'apply (更新を適用)' if apply_changes else 'dry-run (確認のみ)'}")
 
     stores_updated = normalize_stores(stores, apply_changes)
-    reviews_updated = normalize_reviews(reviews, apply_changes)
+    surveys_updated = normalize_surveys(surveys, apply_changes)
 
     print()
     print(f"店舗ドキュメントの更新対象数: {stores_updated}")
-    print(f"レビューの更新対象数      : {reviews_updated}")
+    print(f"アンケートの更新対象数    : {surveys_updated}")
 
     if not apply_changes:
         print("\n--apply を付けて実行すると更新が反映されます。")

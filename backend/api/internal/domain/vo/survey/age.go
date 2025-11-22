@@ -13,6 +13,7 @@ const (
 var ErrInvalidAge = errors.New("年齢は18歳以上で入力してください")
 
 // Age は回答者の年齢を表す値オブジェクト。
+// 18 歳未満は登録できず、最大 60 歳を上限に丸める仕様。
 type Age struct {
 	value int
 }

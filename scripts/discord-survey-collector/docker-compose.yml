@@ -18,7 +18,7 @@ services:
       MONGO_DB: ${MONGO_DB:-makoto-club}
       MONGO_IMPORT_DROP: ${MONGO_IMPORT_DROP:-true}
       STORES_JSON: ${STORES_JSON:-_data/mongo/stores.json}
-      REVIEWS_JSON: ${REVIEWS_JSON:-_data/mongo/reviews.json}
+      SURVEYS_JSON: ${SURVEYS_JSON:-_data/mongo/surveys.json}
     volumes:
       - ./_data/mongo:/app/_data/mongo
     command: ["python", "import_to_mongo.py"]

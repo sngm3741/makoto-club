@@ -1,16 +1,16 @@
 #!/usr/bin/env python3
 """
 stores コレクションに保存されている統計情報 (stats) を
-レビューコレクションの最新内容から再計算して同期するメンテナンススクリプト。
+アンケート（surveys）コレクションの最新内容から再計算して同期するメンテナンススクリプト。
 
 対象:
-  - stats.reviewCount
+  - stats.surveyCount
   - stats.avgRating
   - stats.avgEarning
   - stats.avgWaitTime
   - stats.lastReviewedAt
 
-計算対象となるレビューは status が "approved" のもののみ。
+計算対象となるアンケートは status が "approved" のもの、もしくは status フィールドが存在しないもの。
 
 実行例:
   MONGO_URI="mongodb+srv://..." \
@@ -35,16 +35,16 @@ from pymongo.collection import Collection
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Recalculate store stats from approved reviews.")
+    parser = argparse.ArgumentParser(description="Recalculate store stats from approved surveys.")
     parser.add_argument(
         "--apply",
         action="store_true",
         help="実際に更新を適用します。指定しない場合は dry-run になります。",
     )
     parser.add_argument(
-        "--review-collection",
-        default=os.getenv("REVIEW_COLLECTION", "reviews"),
-        help="レビューのコレクション名 (default: %(default)s)",
+        "--survey-collection",
+        default=os.getenv("SURVEY_COLLECTION", "surveys"),
+        help="アンケートのコレクション名 (default: %(default)s)",
     )
     parser.add_argument(
         "--store-collection",
@@ -64,21 +64,24 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def fetch_review_stats(collection: Collection) -> Dict[ObjectId, Dict[str, object]]:
+def fetch_survey_stats(collection: Collection) -> Dict[ObjectId, Dict[str, object]]:
     pipeline = [
         {
             "$match": {
-                "status": "approved",
+                "$or": [
+                    {"status": {"$exists": False}},
+                    {"status": "approved"},
+                ],
             }
         },
         {
             "$group": {
                 "_id": "$storeId",
-                "reviewCount": {"$sum": 1},
+                "surveyCount": {"$sum": 1},
                 "avgRating": {"$avg": "$rating"},
                 "avgEarning": {"$avg": "$averageEarning"},
                 "avgWaitTime": {"$avg": "$waitTimeHours"},
-                "lastReviewedAt": {"$max": "$createdAt"},
+                "lastSurveyedAt": {"$max": "$createdAt"},
             }
         },
     ]
@@ -89,11 +92,11 @@ def fetch_review_stats(collection: Collection) -> Dict[ObjectId, Dict[str, objec
         if not isinstance(store_id, ObjectId):
             continue
         stats[store_id] = {
-            "reviewCount": doc.get("reviewCount", 0) or 0,
+            "surveyCount": doc.get("surveyCount", 0) or 0,
             "avgRating": doc.get("avgRating"),
             "avgEarning": doc.get("avgEarning"),
             "avgWaitTime": doc.get("avgWaitTime"),
-            "lastReviewedAt": doc.get("lastReviewedAt"),
+            "lastSurveyedAt": doc.get("lastSurveyedAt"),
         }
     return stats
 
@@ -116,21 +119,21 @@ def recalc_stores(
         stats = stats_map.get(store_id)
         if stats is None:
             update = {
-                "stats.reviewCount": 0,
+                "stats.surveyCount": 0,
                 "stats.avgRating": None,
                 "stats.avgEarning": None,
                 "stats.avgWaitTime": None,
-                "stats.lastReviewedAt": None,
+                "stats.lastSurveyedAt": None,
                 "updatedAt": now,
             }
             zeroed += 1
         else:
             update = {
-                "stats.reviewCount": int(stats.get("reviewCount", 0) or 0),
+                "stats.surveyCount": int(stats.get("surveyCount", 0) or 0),
                 "stats.avgRating": stats.get("avgRating"),
                 "stats.avgEarning": stats.get("avgEarning"),
                 "stats.avgWaitTime": stats.get("avgWaitTime"),
-                "stats.lastReviewedAt": stats.get("lastReviewedAt"),
+                "stats.lastSurveyedAt": stats.get("lastSurveyedAt"),
                 "updatedAt": now,
             }
 
@@ -148,15 +151,15 @@ def main() -> int:
     client = MongoClient(args.uri)
     database = client[args.database]
     stores = database[args.store_collection]
-    reviews = database[args.review_collection]
+    surveys = database[args.survey_collection]
 
     print(f"== 対象データベース: {args.database}")
     print(f"== 店舗コレクション: {args.store_collection}")
-    print(f"== レビューコレクション: {args.review_collection}")
+    print(f"== アンケートコレクション: {args.survey_collection}")
     print(f"== モード: {'apply (更新を適用)' if apply_changes else 'dry-run (確認のみ)'}")
 
-    stats_map = fetch_review_stats(reviews)
-    print(f"\nレビュー統計を取得: {len(stats_map)} 店舗分")
+    stats_map = fetch_survey_stats(surveys)
+    print(f"\nアンケート統計を取得: {len(stats_map)} 店舗分")
 
     total, zeroed = recalc_stores(stores, stats_map, apply_changes)
 

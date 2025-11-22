@@ -13,6 +13,7 @@ const (
 var ErrInvalidSpecScore = errors.New("スペックは60以上で入力してください")
 
 // SpecScore は身長・体重などから算出されるスコアを表す。
+// 60〜140 の範囲で丸めることで外れ値を防ぐ。
 type SpecScore struct {
 	value int
 }

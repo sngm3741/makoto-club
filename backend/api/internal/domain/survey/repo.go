@@ -12,7 +12,8 @@ import (
 type Repo interface {
 	Save(context.Context, *Survey) error
 	FindByID(context.Context, survey_vo.ID) (*Survey, error)
-	FindByStore(context.Context, store_vo.ID, common_vo.Pagination) ([]*Survey, error)
-	FindByPrefecture(context.Context, store_vo.Prefecture, common_vo.Pagination) ([]*Survey, error)
+	FindByStore(context.Context, store_vo.ID, common_vo.SortKey, common_vo.Pagination) ([]*Survey, int64, error)
+	FindByPrefecture(context.Context, store_vo.Prefecture, common_vo.SortKey, common_vo.Pagination) ([]*Survey, int64, error)
+	FindAll(context.Context, common_vo.SortKey, common_vo.Pagination) ([]*Survey, int64, error)
 	Delete(context.Context, survey_vo.ID) error
 }

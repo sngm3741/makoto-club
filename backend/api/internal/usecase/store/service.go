@@ -16,6 +16,7 @@ type Service interface {
 	FindByID(context.Context, store_vo.ID) (*store_domain.Store, error)
 	FindByPrefecture(context.Context, store_vo.Prefecture, common_vo.Pagination) ([]*store_domain.Store, error)
 	FindByArea(context.Context, store_vo.Area, common_vo.Pagination) ([]*store_domain.Store, error)
+	Search(context.Context, store_domain.SearchFilter, common_vo.SortKey, common_vo.Pagination) ([]*store_domain.Store, int64, error)
 	Delete(context.Context, store_vo.ID) error
 }
 
@@ -52,6 +53,11 @@ func (s *service) FindByPrefecture(ctx context.Context, pref store_vo.Prefecture
 // FindByArea はエリア単位で店舗を取得する。
 func (s *service) FindByArea(ctx context.Context, area store_vo.Area, page common_vo.Pagination) ([]*store_domain.Store, error) {
 	return s.repo.FindByArea(ctx, area, page)
+}
+
+// Search は任意条件で店舗一覧を取得する。
+func (s *service) Search(ctx context.Context, filter store_domain.SearchFilter, sort common_vo.SortKey, page common_vo.Pagination) ([]*store_domain.Store, int64, error) {
+	return s.repo.Search(ctx, filter, sort, page)
 }
 
 // Delete は店舗を削除する。

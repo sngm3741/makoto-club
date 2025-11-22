@@ -12,7 +12,8 @@ const (
 // ErrInvalidWaitTime は待機時間が最小値未満の場合に返される。
 var ErrInvalidWaitTime = errors.New("待機時間は1時間以上で入力してください")
 
-// WaitTimeHours は待機時間を表す値オブジェクト。
+// WaitTimeHours は待機時間(時間単位)を表す値オブジェクト。
+// 1〜24 時間で制限し、極端な値を避ける。
 type WaitTimeHours struct {
 	value int
 }

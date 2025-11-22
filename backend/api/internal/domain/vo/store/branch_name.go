@@ -2,14 +2,15 @@ package store
 
 import "strings"
 
-// BranchName は支店名を表す値オブジェクト。空文字も許容される。
+// BranchName は支店名を表す値オブジェクト。空文字も許容されるため、任意入力の VO として扱う。
 type BranchName struct {
 	value string
 }
 
 // NewBranchName は入力をトリムして支店名 VO を生成する。
-func NewBranchName(input string) BranchName {
-	return BranchName{value: strings.TrimSpace(input)}
+// 現状は形式制約がないため常に nil エラーを返すが、将来の仕様変更に備えて error を返すシグネチャを維持している。
+func NewBranchName(input string) (BranchName, error) {
+	return BranchName{value: strings.TrimSpace(input)}, nil
 }
 
 // String は内部値を返す。

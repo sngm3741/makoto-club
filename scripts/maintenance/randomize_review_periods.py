@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """
-レビューの訪問時期(period)を直近3年以内のランダムな年月に置き換えるスクリプト。
+アンケートの訪問時期(visitedPeriod)を直近3年以内のランダムな年月に置き換えるスクリプト。
 
 特徴:
-  - 各レビューの ObjectID をシードにしているため、dry-run と apply で結果が一致します。
+  - 各アンケートの ObjectID をシードにしているため、dry-run と apply で結果が一致します。
   - 長さはデフォルトで最新36か月 (約3年)。
   - --only-empty を指定すると period が空 (None または "") のドキュメントのみ更新対象。
 
@@ -31,7 +31,7 @@ from pymongo.collection import Collection
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Randomize review period within recent N months.")
+    parser = argparse.ArgumentParser(description="Randomize survey visitedPeriod within recent N months.")
     parser.add_argument(
         "--apply",
         action="store_true",
@@ -54,9 +54,9 @@ def parse_args() -> argparse.Namespace:
         help="period が空のレビューのみ対象にします。",
     )
     parser.add_argument(
-        "--review-collection",
-        default=os.getenv("REVIEW_COLLECTION", "reviews"),
-        help="レビューのコレクション名 (default: %(default)s)",
+        "--survey-collection",
+        default=os.getenv("SURVEY_COLLECTION", "surveys"),
+        help="アンケートのコレクション名 (default: %(default)s)",
     )
     parser.add_argument(
         "--database",
@@ -78,17 +78,24 @@ def month_offset(now: datetime, offset: int) -> Dict[str, int]:
     return {"year": year, "month": month}
 
 
-def generate_period(doc_id: ObjectId, now: datetime, months_range: int) -> str:
+def format_period(year: int, month: int) -> Dict[str, str]:
+    return {
+        "iso": f"{year:04d}-{month:02d}",
+        "label": f"{year}年{month:02d}月",
+    }
+
+
+def generate_period(doc_id: ObjectId, now: datetime, months_range: int) -> Dict[str, str]:
     if months_range <= 0:
         months_range = 1
     rng = random.Random(str(doc_id))
     offset = rng.randint(0, months_range - 1)
     components = month_offset(now, offset)
-    return f"{components['year']}年{components['month']:02d}月"
+    return format_period(components["year"], components["month"])
 
 
 def randomize_periods(
-    reviews: Collection,
+    surveys: Collection,
     months_range: int,
     only_empty: bool,
     apply_changes: bool,
@@ -96,25 +103,35 @@ def randomize_periods(
     now = datetime.now(timezone.utc)
     filter_query: Dict[str, object] = {}
     if only_empty:
-        filter_query["$or"] = [{"period": {"$exists": False}}, {"period": None}, {"period": ""}]
+        filter_query["$or"] = [
+            {"visitedPeriod": {"$exists": False}},
+            {"visitedPeriod": None},
+            {"visitedPeriod": ""},
+            {"period": {"$exists": False}},
+            {"period": None},
+            {"period": ""},
+        ]
 
-    cursor = reviews.find(filter_query, {"_id": 1}, batch_size=200)
+    cursor = surveys.find(filter_query, {"_id": 1, "period": 1}, batch_size=200)
     updated = 0
     for doc in cursor:
-        review_id = doc.get("_id")
-        if not isinstance(review_id, ObjectId):
+        survey_id = doc.get("_id")
+        if not isinstance(survey_id, ObjectId):
             continue
 
-        new_period = generate_period(review_id, now, months_range)
+        new_period = generate_period(survey_id, now, months_range)
         updated += 1
         if apply_changes:
-            reviews.update_one(
-                {"_id": review_id},
+            update_doc: Dict[str, object] = {
+                "visitedPeriod": new_period["iso"],
+                "updatedAt": now,
+            }
+            if doc.get("period") is not None:
+                update_doc["period"] = new_period["label"]
+            surveys.update_one(
+                {"_id": survey_id},
                 {
-                    "$set": {
-                        "period": new_period,
-                        "updatedAt": now,
-                    }
+                    "$set": update_doc,
                 },
             )
     return updated
@@ -130,22 +147,22 @@ def main() -> int:
 
     client = MongoClient(args.uri)
     database = client[args.database]
-    reviews = database[args.review_collection]
+    surveys = database[args.survey_collection]
 
     print(f"== 対象データベース: {args.database}")
-    print(f"== レビューコレクション: {args.review_collection}")
+    print(f"== アンケートコレクション: {args.survey_collection}")
     print(f"== モード: {'apply (更新を適用)' if apply_changes else 'dry-run (確認のみ)'}")
     print(f"== 対象範囲: 直近 {args.months} ヶ月")
-    print(f"== 対象条件: {'period が空のみ' if args.only_empty else '全レビュー'}")
+    print(f"== 対象条件: {'visitedPeriod が空のみ' if args.only_empty else '全アンケート'}")
 
     updated = randomize_periods(
-        reviews=reviews,
+        surveys=surveys,
         months_range=args.months,
         only_empty=args.only_empty,
         apply_changes=apply_changes,
     )
 
-    print(f"\n更新対象レビュー数: {updated}")
+    print(f"\n更新対象アンケート数: {updated}")
     if not apply_changes:
         print("\n--apply を付けて実行すると更新が反映されます。")
 

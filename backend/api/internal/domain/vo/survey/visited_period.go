@@ -14,6 +14,7 @@ var ErrEmptyVisitedPeriod = errors.New("働いた時期を指定してくださ�
 var ErrInvalidVisitedPeriod = errors.New("働いた時期の形式が不正です")
 
 // VisitedPeriod は稼働した年月を表す値オブジェクト。
+// 月単位でのみ管理し、文字列フォーマットは "YYYY-MM" に固定する。
 type VisitedPeriod struct {
 	value time.Time
 }

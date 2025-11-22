@@ -13,5 +13,6 @@ type Repo interface {
 	FindByID(context.Context, store_vo.ID) (*Store, error)
 	FindByPrefecture(context.Context, store_vo.Prefecture, common_vo.Pagination) ([]*Store, error)
 	FindByArea(context.Context, store_vo.Area, common_vo.Pagination) ([]*Store, error)
+	Search(context.Context, SearchFilter, common_vo.SortKey, common_vo.Pagination) ([]*Store, int64, error)
 	Delete(context.Context, store_vo.ID) error
 }

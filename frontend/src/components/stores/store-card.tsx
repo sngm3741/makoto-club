@@ -1,38 +1,72 @@
-import Link from 'next/link';
+'use client';
 
-import type { StoreSummary } from '@/types/review';
+import Link from 'next/link';
+import { KeyboardEvent } from 'react';
+import { useRouter } from 'next/navigation';
+
+import type { StoreSummary } from '@/types/survey';
 
 type StoreCardProps = {
   store: StoreSummary;
 };
 
 export const StoreCard = ({ store }: StoreCardProps) => {
-  const hasReviews = store.reviewCount > 0;
-  const averageDisplay = hasReviews
+  const router = useRouter();
+	const surveyCount = store.surveyCount ?? store.reviewCount ?? 0;
+	const hasSurveys = surveyCount > 0;
+  const averageDisplay = hasSurveys
     ? store.averageEarningLabel && store.averageEarningLabel !== '-'
       ? store.averageEarningLabel
       : `${store.averageEarning}万円`
     : '-';
-  const waitDisplay = hasReviews
+  const waitDisplay = hasSurveys
     ? store.waitTimeLabel && store.waitTimeLabel !== '-'
       ? store.waitTimeLabel
       : `${store.waitTimeHours}時間`
     : '-';
   const ratingDisplay = store.averageRating.toFixed(1);
 
+  const handleNavigateDetail = () => {
+    router.push(`/stores/${encodeURIComponent(store.id)}`);
+  };
+
+  const handleKeyDown = (event: KeyboardEvent<HTMLElement>) => {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      handleNavigateDetail();
+    }
+  };
+
   return (
-    <article className="flex flex-col gap-4 rounded-2xl border border-slate-100 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
+    <article
+      role="link"
+      tabIndex={0}
+      onClick={handleNavigateDetail}
+      onKeyDown={handleKeyDown}
+      className="flex cursor-pointer flex-col gap-4 rounded-2xl border border-slate-100 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-pink-300"
+      aria-label={`${store.storeName}の店舗詳細`}
+    >
       <div className="flex items-center justify-between text-xs text-slate-500">
-        <span className="rounded-full bg-pink-50 px-3 py-1 text-pink-600">
+        <Link
+          href={`/stores?prefecture=${encodeURIComponent(store.prefecture)}`}
+          className="rounded-full bg-pink-50 px-3 py-1 text-pink-600 hover:bg-pink-100"
+          onClick={(event) => event.stopPropagation()}
+        >
           {store.prefecture}
-        </span>
-        <span>{translateCategory(store.category)}</span>
+        </Link>
+        <Link
+          href={`/stores?industry=${encodeURIComponent(store.category)}`}
+          className="font-semibold text-slate-500 hover:text-pink-600"
+          onClick={(event) => event.stopPropagation()}
+        >
+          {translateCategory(store.category)}
+        </Link>
       </div>
       <div>
         <h3 className="text-lg font-semibold text-slate-900">{store.storeName}</h3>
-        <p className="mt-1 text-sm text-slate-500">
-          レビュー件数: <strong className="font-semibold text-slate-700">{store.reviewCount}</strong>
-        </p>
+		<p className="mt-1 text-sm text-slate-500">
+			アンケート件数: <strong className="font-semibold text-slate-700">{surveyCount}</strong>
+		</p>
         <div className="mt-2 flex items-center gap-2 text-xs text-slate-500">
           <StarDisplay value={store.averageRating} />
           <span>{ratingDisplay} / 5</span>
@@ -52,13 +86,6 @@ export const StoreCard = ({ store }: StoreCardProps) => {
           </dd>
         </div>
       </dl>
-      <Link
-        href={`/reviews?store=${encodeURIComponent(store.storeName)}`}
-        className="inline-flex w-fit items-center gap-1 text-sm font-semibold text-pink-600 hover:text-pink-500"
-      >
-        この店舗のレビューを見る
-        <span aria-hidden>→</span>
-      </Link>
     </article>
   );
 };

@@ -22,6 +22,7 @@ var allowedWorkTypes = map[string]struct{}{
 }
 
 // WorkType は勤務形態を表す値オブジェクト。
+// 現状は「在籍」「出稼ぎ」の 2 種類のみ許容している。
 type WorkType struct {
 	value string
 }

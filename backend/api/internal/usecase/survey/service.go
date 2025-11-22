@@ -16,8 +16,10 @@ type Service interface {
 	Create(context.Context, *survey_domain.Survey) error
 	Update(context.Context, *survey_domain.Survey) error
 	Delete(context.Context, survey_vo.ID) error
-	GetByStore(context.Context, store_vo.ID, common_vo.Pagination) ([]*survey_domain.Survey, error)
-	GetByPrefecture(context.Context, store_vo.Prefecture, common_vo.Pagination) ([]*survey_domain.Survey, error)
+	FindByID(context.Context, survey_vo.ID) (*survey_domain.Survey, error)
+	GetByStore(context.Context, store_vo.ID, common_vo.SortKey, common_vo.Pagination) ([]*survey_domain.Survey, int64, error)
+	GetByPrefecture(context.Context, store_vo.Prefecture, common_vo.SortKey, common_vo.Pagination) ([]*survey_domain.Survey, int64, error)
+	ListAll(context.Context, common_vo.SortKey, common_vo.Pagination) ([]*survey_domain.Survey, int64, error)
 }
 
 type service struct {
@@ -53,12 +55,22 @@ func (s *service) Delete(ctx context.Context, id survey_vo.ID) error {
 	return s.repo.Delete(ctx, id)
 }
 
+// FindByID はアンケートIDで取得する。
+func (s *service) FindByID(ctx context.Context, id survey_vo.ID) (*survey_domain.Survey, error) {
+	return s.repo.FindByID(ctx, id)
+}
+
 // GetByStore は店舗IDに紐づくアンケートを取得する。
-func (s *service) GetByStore(ctx context.Context, storeID store_vo.ID, page common_vo.Pagination) ([]*survey_domain.Survey, error) {
-	return s.repo.FindByStore(ctx, storeID, page)
+func (s *service) GetByStore(ctx context.Context, storeID store_vo.ID, sort common_vo.SortKey, page common_vo.Pagination) ([]*survey_domain.Survey, int64, error) {
+	return s.repo.FindByStore(ctx, storeID, sort, page)
 }
 
 // GetByPrefecture は都道府県でアンケートを取得する。
-func (s *service) GetByPrefecture(ctx context.Context, pref store_vo.Prefecture, page common_vo.Pagination) ([]*survey_domain.Survey, error) {
-	return s.repo.FindByPrefecture(ctx, pref, page)
+func (s *service) GetByPrefecture(ctx context.Context, pref store_vo.Prefecture, sort common_vo.SortKey, page common_vo.Pagination) ([]*survey_domain.Survey, int64, error) {
+	return s.repo.FindByPrefecture(ctx, pref, sort, page)
+}
+
+// ListAll は管理者用に全アンケートをページング取得する。
+func (s *service) ListAll(ctx context.Context, sort common_vo.SortKey, page common_vo.Pagination) ([]*survey_domain.Survey, int64, error) {
+	return s.repo.FindAll(ctx, sort, page)
 }

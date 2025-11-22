@@ -28,11 +28,11 @@ def main():
 
     mongo_db = os.getenv("MONGO_DB", "makoto-club")
     stores_path = Path(os.getenv("STORES_JSON", "_data/mongo/stores.json"))
-    reviews_path = Path(os.getenv("REVIEWS_JSON", "_data/mongo/reviews.json"))
+    surveys_path = Path(os.getenv("SURVEYS_JSON", "_data/mongo/surveys.json"))
     drop_collections = bool_env("MONGO_IMPORT_DROP", True)
 
     stores = load_json_array(stores_path)
-    reviews = load_json_array(reviews_path)
+    surveys = load_json_array(surveys_path)
 
     client = MongoClient(mongo_uri)
     db = client[mongo_db]
@@ -50,10 +50,10 @@ def main():
         return collection.count_documents({})
 
     stores_count = apply_collection("stores", stores)
-    reviews_count = apply_collection("reviews", reviews)
+    surveys_count = apply_collection("surveys", surveys)
 
     print(f"Imported stores: {stores_count}")
-    print(f"Imported reviews: {reviews_count}")
+    print(f"Imported surveys: {surveys_count}")
 
 
 if __name__ == "__main__":

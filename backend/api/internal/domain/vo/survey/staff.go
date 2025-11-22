@@ -11,7 +11,7 @@ const maxStaffCommentLength = 2000
 // ErrStaffCommentTooLong はスタッフコメントが制限を超えた場合に返される。
 var ErrStaffCommentTooLong = errors.New("スタッフに関するコメントは2000文字以内で入力してください")
 
-// StaffComment はスタッフに関するコメントを表す。
+// StaffComment はスタッフに関するコメントを表す値オブジェクト。
 type StaffComment struct {
 	value string
 }

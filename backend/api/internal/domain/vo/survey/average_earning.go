@@ -13,6 +13,7 @@ const (
 var ErrInvalidAverageEarning = errors.New("平均稼ぎは0以上で入力してください")
 
 // AverageEarning は平均稼ぎ(万円)を表す値オブジェクト。
+// 上限は 20 万円で丸め、下限は 0 を許容する仕様。
 type AverageEarning struct {
 	value int
 }

@@ -11,7 +11,8 @@ const maxCustomerCommentLength = 2000
 // ErrCustomerCommentTooLong は客層に関するコメントが制限を超えた場合に返される。
 var ErrCustomerCommentTooLong = errors.New("客層のコメントは2000文字以内で入力してください")
 
-// CustomerComment は客層に関するコメントを表す。
+// CustomerComment は客層に関するコメントを表す値オブジェクト。
+// 2000 文字上限を超えるとエラーになる。
 type CustomerComment struct {
 	value string
 }

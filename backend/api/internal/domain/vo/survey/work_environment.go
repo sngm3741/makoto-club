@@ -11,7 +11,7 @@ const maxWorkEnvironmentCommentLength = 2000
 // ErrWorkEnvironmentCommentTooLong は職場環境コメントが制限を超えた場合に返される。
 var ErrWorkEnvironmentCommentTooLong = errors.New("職場環境のコメントは2000文字以内で入力してください")
 
-// WorkEnvironmentComment は職場環境に関するコメントを表す。
+// WorkEnvironmentComment は職場環境に関するコメントを表す値オブジェクト。
 type WorkEnvironmentComment struct {
 	value string
 }

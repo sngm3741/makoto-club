@@ -18,11 +18,14 @@ import (
 var _ survey_domain.Repo = (*Repo)(nil)
 
 // Repo は MongoDB バックエンドのアンケートリポジトリ。
+// Store 集約のメタデータをアンケートのコピーとして保持するため、ドキュメント構造が比較的複雑になる。
 type Repo struct {
 	collection *mongo.Collection
 }
 
 // NewRepo は SurveyRepo を返す。
+// NewRepo は Mongo コレクションから Repo を組み立てる。
+// nil の場合は panic を発生させ、DI 段階で気付けるようにする。
 func NewRepo(col *mongo.Collection) *Repo {
 	if col == nil {
 		panic("mongo survey repo: collection is nil")
@@ -30,6 +33,7 @@ func NewRepo(col *mongo.Collection) *Repo {
 	return &Repo{collection: col}
 }
 
+// Save はアンケートを Upsert する。Survey 側で timestamps を更新した後に保存する想定。
 func (r *Repo) Save(ctx context.Context, entity *survey_domain.Survey) error {
 	if entity == nil {
 		return errors.New("mongo survey repo: survey is nil")
@@ -46,6 +50,7 @@ func (r *Repo) Save(ctx context.Context, entity *survey_domain.Survey) error {
 	return err
 }
 
+// FindByID はアンケート ID から 1 件取得する。ソフトデリートは除外。
 func (r *Repo) FindByID(ctx context.Context, id survey_vo.ID) (*survey_domain.Survey, error) {
 	oid, err := primitive.ObjectIDFromHex(id.Value())
 	if err != nil {
@@ -59,20 +64,23 @@ func (r *Repo) FindByID(ctx context.Context, id survey_vo.ID) (*survey_domain.Su
 	return doc.toEntity()
 }
 
-func (r *Repo) FindByStore(ctx context.Context, storeID store_vo.ID, page common_vo.Pagination) ([]*survey_domain.Survey, error) {
+// FindByStore は店舗 ID に紐づくアンケートをページング付きで取得する。
+func (r *Repo) FindByStore(ctx context.Context, storeID store_vo.ID, sort common_vo.SortKey, page common_vo.Pagination) ([]*survey_domain.Survey, int64, error) {
 	oid, err := primitive.ObjectIDFromHex(storeID.Value())
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 	filter := bson.M{"storeId": oid, "deletedAt": bson.M{"$exists": false}}
-	return r.findMany(ctx, filter, page)
+	return r.findMany(ctx, filter, sort, page)
 }
 
-func (r *Repo) FindByPrefecture(ctx context.Context, pref store_vo.Prefecture, page common_vo.Pagination) ([]*survey_domain.Survey, error) {
+// FindByPrefecture は店舗都道府県をキーに検索する。
+func (r *Repo) FindByPrefecture(ctx context.Context, pref store_vo.Prefecture, sort common_vo.SortKey, page common_vo.Pagination) ([]*survey_domain.Survey, int64, error) {
 	filter := bson.M{"storePrefecture": pref.Value(), "deletedAt": bson.M{"$exists": false}}
-	return r.findMany(ctx, filter, page)
+	return r.findMany(ctx, filter, sort, page)
 }
 
+// Delete はアンケートを物理削除する。
 func (r *Repo) Delete(ctx context.Context, id survey_vo.ID) error {
 	oid, err := primitive.ObjectIDFromHex(id.Value())
 	if err != nil {
@@ -82,8 +90,13 @@ func (r *Repo) Delete(ctx context.Context, id survey_vo.ID) error {
 	return err
 }
 
-func (r *Repo) findMany(ctx context.Context, filter bson.M, page common_vo.Pagination) ([]*survey_domain.Survey, error) {
-	opts := options.Find().SetSort(bson.M{"createdAt": -1})
+// findMany は共通のカーソル処理。ドキュメントを VO に変換しつつスライス化する。
+func (r *Repo) findMany(ctx context.Context, filter bson.M, sortKey common_vo.SortKey, page common_vo.Pagination) ([]*survey_domain.Survey, int64, error) {
+	total, err := r.collection.CountDocuments(ctx, filter)
+	if err != nil {
+		return nil, 0, err
+	}
+	opts := options.Find().SetSort(buildSort(sortKey))
 	if !page.IsZero() {
 		opts.SetSkip(int64(page.Offset()))
 		opts.SetLimit(int64(page.Limit()))
@@ -91,24 +104,40 @@ func (r *Repo) findMany(ctx context.Context, filter bson.M, page common_vo.Pagin
 
 	cursor, err := r.collection.Find(ctx, filter, opts)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 	defer cursor.Close(ctx)
 
 	var docs []document
 	if err := cursor.All(ctx, &docs); err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 
 	surveys := make([]*survey_domain.Survey, 0, len(docs))
 	for _, doc := range docs {
 		entity, err := doc.toEntity()
 		if err != nil {
-			return nil, err
+			return nil, 0, err
 		}
 		surveys = append(surveys, entity)
 	}
-	return surveys, nil
+	return surveys, total, nil
+}
+
+// FindAll は管理用に全アンケートを取得する。
+func (r *Repo) FindAll(ctx context.Context, sort common_vo.SortKey, page common_vo.Pagination) ([]*survey_domain.Survey, int64, error) {
+	return r.findMany(ctx, bson.M{"deletedAt": bson.M{"$exists": false}}, sort, page)
+}
+
+func buildSort(sortKey common_vo.SortKey) bson.D {
+	switch sortKey.Value() {
+	case common_vo.SortEarning:
+		return bson.D{{Key: "averageEarning", Value: -1}, {Key: "createdAt", Value: -1}}
+	case common_vo.SortHelpful:
+		return bson.D{{Key: "helpfulCount", Value: -1}, {Key: "createdAt", Value: -1}}
+	default:
+		return bson.D{{Key: "createdAt", Value: -1}}
+	}
 }
 
 // survey ドキュメント構造
@@ -131,6 +160,8 @@ type document struct {
 	CustomerComment        *string            `bson:"customerComment,omitempty"`
 	StaffComment           *string            `bson:"staffComment,omitempty"`
 	WorkEnvironmentComment *string            `bson:"workEnvironmentComment,omitempty"`
+	EmailAddress           *string            `bson:"emailAddress,omitempty"`
+	ImageURLs              []string           `bson:"imageUrls,omitempty"`
 	CreatedAt              time.Time          `bson:"createdAt"`
 	UpdatedAt              time.Time          `bson:"updatedAt"`
 	DeletedAt              *time.Time         `bson:"deletedAt,omitempty"`
@@ -186,6 +217,13 @@ func newDocument(entity *survey_domain.Survey) (*document, error) {
 	if v := entity.WorkEnvironmentComment(); v != nil {
 		value := v.Value()
 		doc.WorkEnvironmentComment = &value
+	}
+	if email := entity.EmailAddress(); !email.IsZero() {
+		value := email.Value()
+		doc.EmailAddress = &value
+	}
+	if urls := entity.ImageURLs().Strings(); len(urls) > 0 {
+		doc.ImageURLs = urls
 	}
 	if deleted := entity.DeletedAt(); deleted != nil {
 		value := deleted.Value()
@@ -247,7 +285,11 @@ func (d *document) toEntity() (*survey_domain.Survey, error) {
 
 	opts := []survey_domain.Option{}
 	if d.StoreBranchName != nil {
-		opts = append(opts, survey_domain.WithStoreBranch(store_vo.NewBranchName(*d.StoreBranchName)))
+		branch, err := store_vo.NewBranchName(*d.StoreBranchName)
+		if err != nil {
+			return nil, err
+		}
+		opts = append(opts, survey_domain.WithStoreBranch(branch))
 	}
 	if d.StoreArea != nil {
 		area, err := store_vo.NewArea(*d.StoreArea)
@@ -283,6 +325,20 @@ func (d *document) toEntity() (*survey_domain.Survey, error) {
 			return nil, err
 		}
 		opts = append(opts, survey_domain.WithWorkEnvironmentComment(c))
+	}
+	if d.EmailAddress != nil {
+		email, err := survey_vo.NewEmailAddress(*d.EmailAddress)
+		if err != nil {
+			return nil, err
+		}
+		opts = append(opts, survey_domain.WithEmailAddress(email))
+	}
+	if len(d.ImageURLs) > 0 {
+		urls, err := survey_vo.NewImageURLs(d.ImageURLs)
+		if err != nil {
+			return nil, err
+		}
+		opts = append(opts, survey_domain.WithImageURLs(urls))
 	}
 
 	createdAt, err := common_vo.NewTimestamp(d.CreatedAt)

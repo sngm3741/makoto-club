@@ -31,6 +31,8 @@ type Survey struct {
 	customerComment        *survey_vo.CustomerComment
 	staffComment           *survey_vo.StaffComment
 	workEnvironmentComment *survey_vo.WorkEnvironmentComment
+	emailAddress           survey_vo.EmailAddress
+	imageURLs              survey_vo.ImageURLs
 
 	createdAt common_vo.Timestamp
 	updatedAt common_vo.Timestamp
@@ -90,6 +92,22 @@ func WithWorkEnvironmentComment(comment survey_vo.WorkEnvironmentComment) Option
 	return func(s *Survey) error {
 		c := comment
 		s.workEnvironmentComment = &c
+		return nil
+	}
+}
+
+// WithEmailAddress はアンケート回答者のメールアドレスを設定する。
+func WithEmailAddress(email survey_vo.EmailAddress) Option {
+	return func(s *Survey) error {
+		s.emailAddress = email
+		return nil
+	}
+}
+
+// WithImageURLs は画像URLの一覧を設定する。
+func WithImageURLs(urls survey_vo.ImageURLs) Option {
+	return func(s *Survey) error {
+		s.imageURLs = urls
 		return nil
 	}
 }
@@ -211,6 +229,12 @@ func (s *Survey) validate() error {
 	if s.workEnvironmentComment != nil && !s.workEnvironmentComment.Validate() {
 		return errors.New("職場環境コメントの入力値が不正です")
 	}
+	if !s.emailAddress.Validate() {
+		return errors.New("メールアドレスの入力値が不正です")
+	}
+	if !s.imageURLs.Validate() {
+		return errors.New("画像URLの入力値が不正です")
+	}
 	if s.createdAt.IsZero() {
 		s.createdAt = common_vo.NowTimestamp()
 	}
@@ -322,6 +346,16 @@ func (s *Survey) StaffComment() *survey_vo.StaffComment {
 // WorkEnvironmentComment は職場環境コメントを返す。
 func (s *Survey) WorkEnvironmentComment() *survey_vo.WorkEnvironmentComment {
 	return s.workEnvironmentComment
+}
+
+// EmailAddress は回答者のメールアドレスを返す。
+func (s *Survey) EmailAddress() survey_vo.EmailAddress {
+	return s.emailAddress
+}
+
+// ImageURLs は画像URL一覧を返す。
+func (s *Survey) ImageURLs() survey_vo.ImageURLs {
+	return s.imageURLs
 }
 
 // CreatedAt は作成日時を返す。

@@ -48,15 +48,28 @@ export const PREFECTURES = [
   '沖縄県',
 ];
 
-export const REVIEW_CATEGORIES = [
-  { value: 'deriheru', label: 'デリヘル' },
-  { value: 'hoteheru', label: 'ホテヘル' },
-  { value: 'hakoheru', label: '箱ヘル' },
-  { value: 'sopu', label: 'ソープ' },
-  { value: 'dc', label: 'DC' },
-  { value: 'huesu', label: '風エス' },
-  { value: 'menesu', label: 'メンエス' },
+export const SURVEY_CATEGORIES = [
+  { value: 'デリヘル', label: 'デリヘル' },
+  { value: 'ホテヘル', label: 'ホテヘル' },
+  { value: '箱ヘル', label: '箱ヘル' },
+  { value: 'ソープ', label: 'ソープ' },
+  { value: 'DC', label: 'DC' },
+  { value: '風エス', label: '風エス' },
+  { value: 'メンエス', label: 'メンエス' },
 ] as const;
+
+export const STORE_AREAS = [
+  '吉原',
+  'すすきの',
+  '中洲',
+  '歌舞伎町',
+  '福原',
+  '川崎堀之内',
+  '梅田',
+  '錦三',
+] as const;
+
+export const STORE_GENRES = ['熟女', '学園系', 'スタンダード', '格安店', '高級店'] as const;
 
 export const AVERAGE_EARNING_OPTIONS = Array.from({ length: 21 }, (_, index) => {
   const value = index;

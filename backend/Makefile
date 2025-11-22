@@ -56,4 +56,6 @@ dev-down:
 	$(DEV_COMPOSE) down
 
 seed-dev:
+	@echo "Generating fresh sample data..."
+	python3 ../scripts/generate_seed_data.py
 	$(DEV_COMPOSE) --profile seed run --rm mongo-seed
