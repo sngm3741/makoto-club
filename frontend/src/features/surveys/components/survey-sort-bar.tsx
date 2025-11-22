@@ -6,7 +6,7 @@ type SortOption = {
 };
 
 type SurveySortBarProps = {
-  options: SortOption[];
+  options: readonly SortOption[];
   searchParams: Record<string, string | undefined>;
 };
 
