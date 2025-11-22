@@ -11,6 +11,7 @@ import type {
 type SurveySearchParams = {
   prefecture?: string;
   industry?: string;
+  storeName?: string;
   storeId?: string;
   sort?: string;
   page?: number;
@@ -75,6 +76,7 @@ export async function fetchSurveys(
   const url = new URL('/api/surveys', API_BASE_URL);
   if (params.prefecture) url.searchParams.set('prefecture', params.prefecture);
   if (params.industry) url.searchParams.set('industry', params.industry);
+  if (params.storeName) url.searchParams.set('storeName', params.storeName);
   if (params.storeId) url.searchParams.set('storeId', params.storeId);
   if (params.sort) url.searchParams.set('sort', params.sort);
   url.searchParams.set('page', String(page));
