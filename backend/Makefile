@@ -13,6 +13,19 @@ BACKEND_NETWORK ?= infra-backend-network
 PROD_COMPOSE := $(call compose,$(ENVIRONMENT)) -f $(STACK)
 DEV_COMPOSE := $(call compose,local) -f $(STACK) -f $(DEV_STACK)
 
+.PHONY: prod-up prod-down prod-restart prod-logs
+
+prod-up: ensure-networks
+	$(PROD_COMPOSE) up --build -d
+
+prod-down:
+	$(PROD_COMPOSE) down
+
+prod-restart: prod-down prod-up
+
+prod-logs:
+	$(PROD_COMPOSE) logs -f
+
 .PHONY: up down restart logs ps tidy network ensure-networks dev dev-down dev-logs seed-dev
 
 up: ensure-networks
