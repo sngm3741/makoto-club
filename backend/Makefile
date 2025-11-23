@@ -1,10 +1,13 @@
 COMPOSE ?= docker compose
 
 ENV_DIR := env
-SHARED_ENV := $(ENV_DIR)/shared.env
 ENVIRONMENT ?= production
 
-compose = ENVIRONMENT=$(1) ENVIRONMENT_FILE=$(CURDIR)/$(ENV_DIR)/$(1).env $(COMPOSE) --env-file $(SHARED_ENV) --env-file $(ENV_DIR)/$(1).env
+# 絶対パスでenvファイルを渡す
+SHARED_ENV := $(CURDIR)/$(ENV_DIR)/shared.env
+ENV_FILE = $(CURDIR)/$(ENV_DIR)/$(1).env
+
+compose = ENVIRONMENT=$(1) ENVIRONMENT_FILE=$(ENV_FILE) $(COMPOSE) --env-file $(SHARED_ENV) --env-file $(ENV_FILE)
 
 STACK := docker-compose.yml
 DEV_STACK := docker-compose.dev.yml
