@@ -3,6 +3,7 @@ package survey
 import (
 	"context"
 	"errors"
+	"strings"
 	"time"
 
 	survey_domain "github.com/sngm3741/makoto-club-services/api/internal/domain/survey"
@@ -78,6 +79,25 @@ func (r *Repo) FindByStore(ctx context.Context, storeID store_vo.ID, sort common
 func (r *Repo) FindByPrefecture(ctx context.Context, pref store_vo.Prefecture, sort common_vo.SortKey, page common_vo.Pagination) ([]*survey_domain.Survey, int64, error) {
 	filter := bson.M{"storePrefecture": pref.Value(), "deletedAt": bson.M{"$exists": false}}
 	return r.findMany(ctx, filter, sort, page)
+}
+
+// FindAdmin は管理画面向けにフィルタ付きで一覧を返す。
+func (r *Repo) FindAdmin(ctx context.Context, filter survey_domain.AdminFilter, sort common_vo.SortKey, page common_vo.Pagination) ([]*survey_domain.Survey, int64, error) {
+	query := bson.M{"deletedAt": bson.M{"$exists": false}}
+	if filter.Prefecture != nil {
+		query["storePrefecture"] = filter.Prefecture.Value()
+	}
+	if filter.Industry != nil {
+		query["storeIndustry"] = filter.Industry.Value()
+	}
+	if kw := strings.TrimSpace(filter.Keyword); kw != "" {
+		reg := bson.M{"$regex": kw, "$options": "i"}
+		query["$or"] = []bson.M{
+			{"storeName": reg},
+			{"storeBranch": reg},
+		}
+	}
+	return r.findMany(ctx, query, sort, page)
 }
 
 // Delete はアンケートを物理削除する。

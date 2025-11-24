@@ -23,12 +23,13 @@ func NewRouter(handler Handler, allowedOrigins []string) chi.Router {
 			})
 		})
 
-		r.Route("/surveys", func(r chi.Router) {
-			r.Get("/", handler.ListSurveys)
-			r.Route("/{surveyID}", func(r chi.Router) {
-				r.Get("/", handler.GetSurveyByID)
-			})
+	r.Route("/surveys", func(r chi.Router) {
+		r.Get("/", handler.ListSurveys)
+		r.Post("/", handler.SubmitSurvey)
+		r.Route("/{surveyID}", func(r chi.Router) {
+			r.Get("/", handler.GetSurveyByID)
 		})
+	})
 
 		r.Route("/admin", func(r chi.Router) {
 			r.Route("/stores", func(r chi.Router) {

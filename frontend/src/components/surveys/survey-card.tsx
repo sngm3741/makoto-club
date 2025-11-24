@@ -5,10 +5,20 @@ import { KeyboardEvent } from 'react';
 import { useRouter } from 'next/navigation';
 
 import type { SurveySummary } from '@/types/survey';
-import { formatDateTime } from '@/utils/date';
+import { formatDateTime, formatRelativeVisitedPeriod } from '@/utils/date';
 
 type SurveyCardProps = {
   survey: SurveySummary;
+};
+
+const DESCRIPTION_MAX_LENGTH = 200;
+
+const pickDescription = (survey: SurveySummary) => {
+  const candidates = [survey.customerComment, survey.staffComment, survey.workEnvironmentComment];
+  const text = candidates.find((value) => value && value.trim().length > 0)?.trim();
+  if (!text) return '詳しいアンケートは詳細ページでチェック！';
+  if (text.length <= DESCRIPTION_MAX_LENGTH) return text;
+  return `${text.slice(0, DESCRIPTION_MAX_LENGTH)}...`;
 };
 
 export const SurveyCard = ({ survey }: SurveyCardProps) => {
@@ -52,7 +62,7 @@ export const SurveyCard = ({ survey }: SurveyCardProps) => {
           ) : null}
         </h3>
         <p className="mt-1 flex flex-wrap items-center gap-1 text-sm text-slate-500">
-          訪問時期: {survey.visitedPeriod} / 業種:{' '}
+          {formatRelativeVisitedPeriod(survey.visitedPeriod)} / {' '}
           <Link
             href={`/stores?industry=${encodeURIComponent(survey.storeIndustry)}`}
             className="font-semibold text-slate-500 hover:text-pink-600"
@@ -66,9 +76,7 @@ export const SurveyCard = ({ survey }: SurveyCardProps) => {
           <span>{survey.rating.toFixed(1)} / 5</span>
         </div>
       </div>
-      <p className="text-sm text-slate-600">
-        {survey.customerComment ?? '詳しいアンケートは詳細ページでチェック！'}
-      </p>
+      <p className="text-sm text-slate-600">{pickDescription(survey)}</p>
       <dl className="grid grid-cols-2 gap-3 text-xs text-slate-500">
         <div className="rounded-xl bg-slate-50 p-3">
           <dt className="font-medium text-slate-700">平均稼ぎ</dt>

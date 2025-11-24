@@ -1,6 +1,5 @@
 import { Pagination } from '@/components/common/pagination';
 import { SurveyFilterPanel } from '@/features/surveys/components/survey-filter-panel';
-import { SurveyHero } from '@/features/surveys/components/survey-hero';
 import { SurveyListSection } from '@/features/surveys/components/survey-list-section';
 import { SurveySortBar } from '@/features/surveys/components/survey-sort-bar';
 import { fetchSurveys } from '@/lib/surveys';
@@ -9,6 +8,7 @@ type SurveysSearchParams = {
   prefecture?: string;
   industry?: string;
   storeId?: string;
+  keyword?: string;
   page?: string;
   sort?: string;
 };
@@ -37,13 +37,11 @@ export default async function SurveysPage({
 
   return (
     <div className="space-y-8 pb-12">
-      <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
-        <SurveyHero />
-        <SurveyFilterPanel
-          initialPrefecture={resolved.prefecture}
-          initialIndustry={resolved.industry}
-        />
-      </div>
+      <SurveyFilterPanel
+        initialPrefecture={resolved.prefecture}
+        initialIndustry={resolved.industry}
+        initialKeyword={resolved.keyword}
+      />
 
       <SurveySortBar options={SORT_OPTIONS} searchParams={resolved} />
 

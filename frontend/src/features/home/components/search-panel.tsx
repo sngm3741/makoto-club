@@ -1,14 +1,15 @@
 import { SearchForm } from '@/components/search/search-form';
-import { SectionCard, SectionHeader } from '@/components/common/section';
+import { SectionCard, SectionPillTitle } from '@/components/common/section';
 
 export const SearchPanel = () => {
   return (
-    <SectionCard className="shadow-lg">
-      <SectionHeader
-        title="条件から探す"
-        description="絞り込み後は「店舗一覧」に遷移します。希望の都道府県や業種で検索してみてください。"
+    <section className="space-y-3">
+      <SectionPillTitle
+        label="店舗検索"
       />
-      <SearchForm />
-    </SectionCard>
+      <SectionCard className="shadow-lg">
+        <SearchForm keywordParam="name" />
+      </SectionCard>
+    </section>
   );
 };

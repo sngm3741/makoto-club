@@ -19,7 +19,7 @@ type Service interface {
 	FindByID(context.Context, survey_vo.ID) (*survey_domain.Survey, error)
 	GetByStore(context.Context, store_vo.ID, common_vo.SortKey, common_vo.Pagination) ([]*survey_domain.Survey, int64, error)
 	GetByPrefecture(context.Context, store_vo.Prefecture, common_vo.SortKey, common_vo.Pagination) ([]*survey_domain.Survey, int64, error)
-	ListAll(context.Context, common_vo.SortKey, common_vo.Pagination) ([]*survey_domain.Survey, int64, error)
+	ListAdmin(context.Context, survey_domain.AdminFilter, common_vo.SortKey, common_vo.Pagination) ([]*survey_domain.Survey, int64, error)
 }
 
 type service struct {
@@ -70,7 +70,7 @@ func (s *service) GetByPrefecture(ctx context.Context, pref store_vo.Prefecture,
 	return s.repo.FindByPrefecture(ctx, pref, sort, page)
 }
 
-// ListAll は管理者用に全アンケートをページング取得する。
-func (s *service) ListAll(ctx context.Context, sort common_vo.SortKey, page common_vo.Pagination) ([]*survey_domain.Survey, int64, error) {
-	return s.repo.FindAll(ctx, sort, page)
+// ListAdmin は管理者用にフィルタ付きでアンケートをページング取得する。
+func (s *service) ListAdmin(ctx context.Context, filter survey_domain.AdminFilter, sort common_vo.SortKey, page common_vo.Pagination) ([]*survey_domain.Survey, int64, error) {
+	return s.repo.FindAdmin(ctx, filter, sort, page)
 }

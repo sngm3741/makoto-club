@@ -15,15 +15,9 @@ import {
   WAIT_TIME_OPTIONS,
 } from '@/constants/filters';
 import { API_BASE_URL } from '@/lib/api-base';
-import {
-  AUTH_UPDATE_EVENT,
-  TwitterLoginResult,
-  readStoredAuth,
-  startTwitterLogin,
-} from '@/lib/twitter-auth';
-import { uploadImage } from '@/lib/media-upload';
 import Link from 'next/link';
-
+import { uploadImage } from '@/lib/media-upload';
+import { SectionPillTitle } from '@/components/common/section';
 type FormValues = {
   storeName: string;
   branchName: string;
@@ -146,10 +140,8 @@ const StarDisplay = ({ value }: { value: number }) => {
 };
 
 export const SurveyForm = () => {
-  const [auth, setAuth] = useState<TwitterLoginResult | undefined>();
   const [status, setStatus] = useState<'idle' | 'submitting' | 'success' | 'error'>('idle');
   const [errorMessage, setErrorMessage] = useState('');
-  const [, setAuthLoading] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const hasAutoSubmitted = useRef(false);
   const [images, setImages] = useState<{ url: string; name: string; size: number }[]>([]);
@@ -217,64 +209,8 @@ export const SurveyForm = () => {
     defaultValues: DEFAULT_FORM_VALUES,
   });
 
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    const current = readStoredAuth();
-    if (current) {
-      setAuth(current);
-    }
-
-    const listener: EventListener = (event) => {
-      const custom = event as CustomEvent<TwitterLoginResult>;
-      if (!custom.detail) return;
-      setAuth(custom.detail);
-      setErrorMessage('');
-      setStatus('idle');
-      hasAutoSubmitted.current = false;
-    };
-
-    window.addEventListener(AUTH_UPDATE_EVENT, listener);
-    return () => {
-      window.removeEventListener(AUTH_UPDATE_EVENT, listener);
-    };
-  }, []);
-
-  const handleTwitterLogin = useCallback(async () => {
-    if (typeof window === 'undefined') return;
-    if (!TWITTER_AUTH_BASE_URL) {
-      setErrorMessage('Xログインのエンドポイントが設定されていません。');
-      setStatus('error');
-      return;
-    }
-
-    setAuthLoading(true);
-    setErrorMessage('');
-
-    try {
-      await startTwitterLogin(TWITTER_AUTH_BASE_URL);
-      setStatus('idle');
-    } catch (error) {
-      console.error(error);
-      setErrorMessage(
-        error instanceof Error
-          ? error.message
-          : 'Xログインに失敗しました。時間を置いて再度お試しください。',
-      );
-      setStatus('error');
-    } finally {
-      setAuthLoading(false);
-    }
-  }, []);
-
   const onSubmit = useCallback(
     async (values: FormValues) => {
-      if (!auth?.accessToken) {
-        storePendingSurvey(values);
-        hasAutoSubmitted.current = false;
-        handleTwitterLogin();
-        return;
-      }
-
       setStatus('submitting');
       setErrorMessage('');
 
@@ -282,16 +218,16 @@ export const SurveyForm = () => {
         storeName: values.storeName.trim(),
         branchName: values.branchName.trim(),
         prefecture: values.prefecture,
-        category: values.category,
-        visitedAt: values.visitedAt,
+        industry: values.category, // バックエンドのキーに合わせる
+        visitedPeriod: values.visitedAt, // バックエンドのキーに合わせる
         workType: values.workType,
         age: Number(values.age),
         specScore: values.specScore ?? SPEC_MIN,
         waitTimeHours: Number(values.waitTimeHours),
         averageEarning: Number(values.averageEarning),
-        customerComment: values.customerComment.trim(),
-        staffComment: values.staffComment.trim(),
-        workEnvironmentComment: values.workEnvironmentComment.trim(),
+        customerComment: values.customerComment.trim() || undefined,
+        staffComment: values.staffComment.trim() || undefined,
+        workEnvironmentComment: values.workEnvironmentComment.trim() || undefined,
         emailAddress: values.emailAddress.trim() || undefined,
         imageUrls: images.map((item) => item.url),
         rating: values.rating ?? RATING_MIN,
@@ -302,22 +238,12 @@ export const SurveyForm = () => {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            Authorization: `Bearer ${auth.accessToken}`,
           },
           body: JSON.stringify(payload),
         });
 
         const data = await response.json().catch(() => null);
         if (!response.ok) {
-          if (response.status === 401) {
-            storePendingSurvey(values);
-            setStatus('idle');
-            setErrorMessage('');
-            hasAutoSubmitted.current = false;
-            setAuth(undefined);
-            handleTwitterLogin();
-            return;
-          }
           const message =
             data &&
             typeof data === 'object' &&
@@ -346,33 +272,18 @@ export const SurveyForm = () => {
         setStatus('error');
       }
     },
-    [auth, handleTwitterLogin, images, reset],
+    [images, reset],
   );
-
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    if (!auth?.accessToken) return;
-    if (hasAutoSubmitted.current) return;
-
-    const pending = readPendingSurvey();
-    if (!pending) return;
-
-    hasAutoSubmitted.current = true;
-    reset(pending);
-    setImages([]);
-    setTimeout(() => {
-      void handleSubmit(onSubmit)();
-    }, 0);
-  }, [auth, handleSubmit, onSubmit, reset]);
 
   return (
     <section className="space-y-6 rounded-3xl border border-slate-100 bg-white p-6 shadow-lg">
       <header className="space-y-3">
-        <h1 className="text-xl font-semibold text-slate-900">アンケートを投稿する</h1>
+        <SectionPillTitle label="アンケートを投稿する" />
         <div className="space-y-2 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-xs text-slate-600">
           <p className="flex items-center gap-2 text-sm font-semibold text-slate-700">
-            <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-black font-semibold text-white">𝕏</span>
-            アンケートの審査後に報酬を 𝕏 のDMでお送りします (PayPay 1,000 円分)
+            <span className="inline-flex h-6 w-6 items-center justify-center  font-semibold text-white">✅</span>
+            アンケート報酬を希望の方は、返信用メールアドレス(任意) の欄にご記入ください。<br />
+            内容の確認後、PayPay 1000円分のURLリンクをお送りします。
           </p>
         </div>
       </header>
@@ -676,9 +587,12 @@ export const SurveyForm = () => {
         </div>
 
         {status === 'success' ? (
+          <>
           <p className="rounded-xl bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
-            投稿ありがとうございます！運営チームが内容を確認後、TwitterのDMで特典のご案内をお送りします。
+            ご投稿ありがとうございました。<br />
+            アンケート内容の確認次第、ご記入いただいたメールアドレス宛てに報酬をお送りします。
           </p>
+         </>
         ) : null}
 
         {status === 'error' && errorMessage ? (
@@ -698,13 +612,15 @@ export const SurveyForm = () => {
         <div className="fixed inset-0 z-[210] flex items-center justify-center bg-black/40 px-4">
           <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-2xl">
             <div className="space-y-3 text-center">
-              <h2 className="text-lg font-semibold text-slate-900">投稿を受け付けました</h2>
-              <p className="text-sm text-slate-600">
-                アンケートありがとうございます！内容を審査後、𝕏 の DM（@
-                {auth?.twitterUser?.username ?? '---'}）へ PayPay 1,000 円分のリンクをご案内します。
+              <h2 className="text-lg font-semibold text-slate-900">アンケートを投稿しました</h2>
+              <p className="text-ms text-slate-400">
+              報酬 (PayPay1000円分) の送付は、内容の審査が終わり次第となります。
               </p>
               <p className="text-xs text-slate-400">
-                審査には最大で 2〜3 営業日ほどお時間をいただく場合があります。
+              makotoclub03@gmail.com からお送りします。
+              </p>
+              <p className="text-xs text-slate-400">
+              (※) メールアドレス(任意) にご記入いただいた方のみ
               </p>
             </div>
             <button

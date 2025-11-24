@@ -14,6 +14,13 @@ type Repo interface {
 	FindByID(context.Context, survey_vo.ID) (*Survey, error)
 	FindByStore(context.Context, store_vo.ID, common_vo.SortKey, common_vo.Pagination) ([]*Survey, int64, error)
 	FindByPrefecture(context.Context, store_vo.Prefecture, common_vo.SortKey, common_vo.Pagination) ([]*Survey, int64, error)
-	FindAll(context.Context, common_vo.SortKey, common_vo.Pagination) ([]*Survey, int64, error)
+	FindAdmin(context.Context, AdminFilter, common_vo.SortKey, common_vo.Pagination) ([]*Survey, int64, error)
 	Delete(context.Context, survey_vo.ID) error
+}
+
+// AdminFilter は管理画面での検索条件を表す。
+type AdminFilter struct {
+	Prefecture *store_vo.Prefecture
+	Industry   *store_vo.Industry
+	Keyword    string
 }

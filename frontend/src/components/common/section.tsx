@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import type { ReactNode } from 'react';
 
 import { cn } from '@/utils/cn';
@@ -59,6 +60,35 @@ export const SectionHeader = ({
     {description && (
       <p className="text-xs text-slate-500">{description}</p>
     )}
+  </div>
+);
+
+type SectionPillTitleProps = {
+  label: string;
+  description?: string;
+  align?: 'left' | 'center';
+  linkHref?: string;
+};
+
+export const SectionPillTitle = ({ label, description, align = 'center', linkHref }: SectionPillTitleProps) => (
+  <div className={cn('space-y-2', align === 'center' && 'text-center')}>
+    <div className="flex w-full items-center gap-3">
+      <div className="h-px flex-1 bg-gradient-to-r from-transparent via-pink-200/70 to-transparent" />
+      {linkHref ? (
+        <Link
+          href={linkHref}
+          className="rounded-full bg-pink-50 px-3 py-2 text-ms font-semibold tracking-wide text-pink-600 ring-1 ring-pink-100 transition hover:text-pink-700"
+        >
+          {label}
+        </Link>
+      ) : (
+        <span className="rounded-full bg-pink-50 px-3 py-2 text-ms font-semibold tracking-wide text-pink-600 ring-1 ring-pink-100">
+          {label}
+        </span>
+      )}
+      <div className="h-px flex-1 bg-gradient-to-r from-transparent via-pink-200/70 to-transparent" />
+    </div>
+    {description && <p className="text-xs text-slate-500">{description}</p>}
   </div>
 );
 

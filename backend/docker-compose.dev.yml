@@ -12,28 +12,19 @@ services:
   makoto-club-api:
     env_file:
       - ./env/shared.env
-      - ./env/local.env
+      - ${ENVIRONMENT_FILE:-./env/local.env}
+    environment:
+      # 同一ネットワーク上の ingress サービス名を使う
+      MESSENGER_GATEWAY_URL: http://messenger-ingress:8080
+      MESSENGER_GATEWAY_DESTINATION: discord-incoming
+      # Mongo接続を明示的に渡す（env_file が効かないケースの保険）
+      MONGO_URI: ${MONGO_URI:-mongodb://mongo:27017/makoto-club}
+      MONGO_DB: ${MONGO_DB:-makoto-club}
+      SURVEY_COLLECTION: ${SURVEY_COLLECTION:-surveys}
     ports:
       - "8080:8080"
     depends_on:
       - mongo
-
-  mongo-seed:
-    build:
-      context: ../scripts/discord-survey-collector
-      dockerfile: Dockerfile
-    command: ["python", "import_to_mongo.py"]
-    env_file:
-      - ../scripts/env/shared.env
-      - ../scripts/env/local.env
-    volumes:
-      - ../sample:/app/sample:ro
-    networks:
-      - backend
-    depends_on:
-      - mongo
-    profiles:
-      - seed
 
 networks:
   backend:

@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useCallback, useState } from 'react';
@@ -23,9 +24,15 @@ export const Header = () => {
   return (
     <header className="relative sticky top-0 z-40 w-full border-b border-slate-100 bg-white/90 backdrop-blur">
       <div className="mx-auto flex h-16 max-w-5xl items-center justify-between px-4">
-        <div className="flex items-center gap-6">
-          <Link href="/" className="font-semibold text-pink-600">
-            <span className="text-lg">{SITE_NAME}</span>
+        <div className="flex items-center gap-3">
+          <Link href="/" className="flex items-center gap-2">
+            <div className="relative h-9 w-9 overflow-hidden rounded-full border border-pink-200 bg-pink-50 shadow-sm ring-1 ring-pink-100">
+              <Image src="/h3.jpg" alt="Makoto Club" fill className="object-cover" sizes="36px" />
+            </div>
+            <span className="flex flex-col leading-tight">
+              <span className="text-lg font-semibold text-pink-600">{SITE_NAME}</span>
+              <span className="text-[10px] font-semibold tracking-wide text-slate-500">#匿名店舗アンケート</span>
+            </span>
           </Link>
           <nav className="hidden gap-4 text-sm font-medium text-slate-700 md:flex">
             {NAV_LINKS.map((link) => {

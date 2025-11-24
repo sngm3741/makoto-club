@@ -1,6 +1,7 @@
 'use client';
 
 import { type ChangeEvent, type FormEvent, useCallback, useMemo, useRef, useState } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
 import {
@@ -25,9 +26,11 @@ type AdminSurvey = {
   storeName: string;
   branchName?: string;
   prefecture: string;
-  category: string;
+  category: string; // バックエンドは industry を返す場合があるので後続で正規化
+  industry?: string;
   workType: string;
-  visitedAt: string;
+  visitedAt: string; // バックエンドは visitedPeriod を返す場合があるので後続で正規化
+  visitedPeriod?: string;
   age: number;
   specScore: number;
   waitTimeHours: number;
@@ -193,9 +196,9 @@ export function AdminSurveyEditor({ initialSurvey, mode = 'edit' }: AdminSurveyE
     storeName: initialSurvey.storeName,
     branchName: initialSurvey.branchName ?? '',
     prefecture: initialSurvey.prefecture,
-    category: canonicalCategoryValue(initialSurvey.category),
+    category: canonicalCategoryValue(initialSurvey.category || initialSurvey.industry),
     workType: initialSurvey.workType ?? WORK_TYPE_OPTIONS[0].value,
-    visitedAt: initialSurvey.visitedAt,
+    visitedAt: initialSurvey.visitedAt || initialSurvey.visitedPeriod || '',
     age: String(initialSurvey.age),
     specScore: String(initialSurvey.specScore),
     waitTimeHours: String(initialSurvey.waitTimeHours),
@@ -221,6 +224,7 @@ export function AdminSurveyEditor({ initialSurvey, mode = 'edit' }: AdminSurveyE
   const [savingContent, setSavingContent] = useState(false);
   const [savingStatus, setSavingStatus] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const [successLink, setSuccessLink] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [imageError, setImageError] = useState<string | null>(null);
   const [uploadingImage, setUploadingImage] = useState(false);
@@ -229,13 +233,16 @@ export function AdminSurveyEditor({ initialSurvey, mode = 'edit' }: AdminSurveyE
   const [storeSearchError, setStoreSearchError] = useState<string | null>(null);
   const [storeSearchExecuted, setStoreSearchExecuted] = useState(false);
   const [filterPrefecture, setFilterPrefecture] = useState(initialSurvey.prefecture ?? '');
-  const [filterCategory, setFilterCategory] = useState(canonicalCategoryValue(initialSurvey.category));
+  const [filterCategory, setFilterCategory] = useState(
+    canonicalCategoryValue(initialSurvey.category || initialSurvey.industry),
+  );
 
   const selectedCategoryLabel = useMemo(() => categoryLabelFromValue(form.category), [form.category]);
 
   const filterCategoryLabel = useMemo(() => categoryLabelFromValue(filterCategory), [filterCategory]);
-  const showStoreSearch = !isCreateMode;
-  const lockStoreFields = isCreateMode && Boolean(initialSurvey.storeId);
+  const showStoreSearch = false;
+  // 店舗に必ず紐づく前提なので全モードでロック
+  const lockStoreFields = true;
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const canAddMoreImages = form.imageUrls.length < MAX_IMAGES && !uploadingImage;
 
@@ -551,9 +558,9 @@ export function AdminSurveyEditor({ initialSurvey, mode = 'edit' }: AdminSurveyE
           storeName: form.storeName.trim(),
           branchName: form.branchName.trim(),
           prefecture: form.prefecture.trim(),
-          category: form.category,
+          industry: form.category, // バックエンドのキーに合わせる
           workType: form.workType,
-          visitedAt: form.visitedAt,
+          visitedPeriod: form.visitedAt, // バックエンドのキーに合わせる
           age: Number(form.age),
           specScore: Number(form.specScore),
           waitTimeHours: Number(form.waitTimeHours),
@@ -590,35 +597,36 @@ export function AdminSurveyEditor({ initialSurvey, mode = 'edit' }: AdminSurveyE
 
         const updated = (await response.json()) as AdminSurvey;
         setSurvey(updated);
-       setForm({
-         storeId: updated.storeId ?? '',
-         storeName: updated.storeName,
-         branchName: updated.branchName ?? '',
-         prefecture: updated.prefecture,
-         category: updated.category,
-         workType: updated.workType ?? WORK_TYPE_OPTIONS[0].value,
-         visitedAt: updated.visitedAt,
-         age: String(updated.age),
-         specScore: String(updated.specScore),
-         waitTimeHours: String(updated.waitTimeHours),
-         averageEarning: String(updated.averageEarning),
-         customerComment: updated.customerComment ?? '',
-         staffComment: updated.staffComment ?? '',
-         workEnvironmentComment: updated.workEnvironmentComment ?? '',
-         emailAddress: updated.emailAddress ?? '',
+        setForm({
+          storeId: updated.storeId ?? '',
+          storeName: updated.storeName,
+          branchName: updated.branchName ?? '',
+          prefecture: updated.prefecture,
+          category: canonicalCategoryValue(updated.category || updated.industry),
+          workType: updated.workType ?? WORK_TYPE_OPTIONS[0].value,
+          visitedAt: updated.visitedAt || updated.visitedPeriod || '',
+          age: String(updated.age),
+          specScore: String(updated.specScore),
+          waitTimeHours: String(updated.waitTimeHours),
+          averageEarning: String(updated.averageEarning),
+          customerComment: updated.customerComment ?? '',
+          staffComment: updated.staffComment ?? '',
+          workEnvironmentComment: updated.workEnvironmentComment ?? '',
+          emailAddress: updated.emailAddress ?? '',
           imageUrls: (updated.imageUrls ?? []).map((url, index) => ({
             url,
             name: `画像${index + 1}`,
             size: 0,
           })),
-         rating: updated.rating.toString(),
-       });
+          rating: updated.rating.toString(),
+        });
         if (isCreateMode) {
-          setMessage('アンケートを登録しました。詳細画面に移動します。');
-          router.push(`/admin/surveys/${updated.id}`);
-          return;
+          setMessage('アンケートを登録しました。');
+          setSuccessLink(`/surveys/${updated.id}`);
+        } else {
+          setMessage('アンケート内容を更新しました');
+          setSuccessLink(null);
         }
-        setMessage('アンケート内容を更新しました');
       } catch (err) {
         setError(err instanceof Error ? err.message : '内容の更新に失敗しました');
       } finally {
@@ -689,7 +697,18 @@ export function AdminSurveyEditor({ initialSurvey, mode = 'edit' }: AdminSurveyE
         {isCreateMode ? 'アンケート作成' : 'アンケート編集'}
       </h1>
 
-      {message ? <p className="rounded-lg bg-emerald-50 px-4 py-3 text-sm text-emerald-700">{message}</p> : null}
+      {message ? (
+        <p className="rounded-lg bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+          {message}
+          {successLink ? (
+            <span className="ml-2">
+              <Link href={successLink} className="underline">
+                アンケートを確認する
+              </Link>
+            </span>
+          ) : null}
+        </p>
+      ) : null}
       {error ? <p className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">{error}</p> : null}
 
       <section className="space-y-4 rounded-2xl border border-slate-100 bg-white p-6 shadow-sm">

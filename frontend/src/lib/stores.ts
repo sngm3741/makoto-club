@@ -1,6 +1,4 @@
 "use server";
-
-import { MOCK_SURVEYS } from '@/data/mock-surveys';
 import { API_BASE_URL } from '@/lib/api-base';
 import type { StoreDetail, StoreSummary, SurveySummary } from '@/types/survey';
 
@@ -9,6 +7,7 @@ type StoreSearchParams = {
   area?: string;
   industry?: string;
   genre?: string;
+  name?: string;
   page?: number;
   limit?: number;
   sort?: string;
@@ -190,15 +189,7 @@ export async function fetchStores(params: StoreSearchParams) {
   const { page = 1, limit = DEFAULT_LIMIT } = params;
 
   if (!API_BASE_URL) {
-    const stores = aggregateMockStores();
-    const filtered = sortStores(filterStores(stores, params), params.sort);
-    const start = (page - 1) * limit;
-    return {
-      items: filtered.slice(start, start + limit),
-      page,
-      limit,
-      total: filtered.length,
-    };
+    throw new Error('API_BASE_URL が設定されていません');
   }
 
   const url = new URL('/api/stores', API_BASE_URL);
@@ -206,6 +197,7 @@ export async function fetchStores(params: StoreSearchParams) {
   if (params.area) url.searchParams.set('area', params.area);
   if (params.industry) url.searchParams.set('industry', params.industry);
   if (params.genre) url.searchParams.set('genre', params.genre);
+  if (params.name) url.searchParams.set('name', params.name);
   url.searchParams.set('page', String(page));
   url.searchParams.set('limit', String(limit));
   if (params.sort) url.searchParams.set('sort', params.sort);
@@ -276,21 +268,7 @@ export async function fetchStores(params: StoreSearchParams) {
 
 export async function fetchStoreDetail(storeId: string): Promise<StoreDetail> {
   if (!API_BASE_URL) {
-    const mock = aggregateMockStores().find((store) => store.id === storeId);
-    const surveys = MOCK_SURVEYS.filter((survey) => survey.storeName === mock?.storeName);
-    return {
-      ...(mock ?? {
-        id: storeId,
-        storeName: '不明な店舗',
-        prefecture: '',
-        category: '',
-        averageRating: 0,
-        averageEarning: 0,
-        waitTimeHours: 0,
-        surveyCount: 0,
-      }),
-      surveys,
-    };
+    throw new Error('API_BASE_URL が設定されていません');
   }
 
   const storeResponse = await fetch(`${API_BASE_URL}/api/stores/${storeId}`, {

@@ -2,19 +2,20 @@ COMPOSE ?= docker compose
 
 ENV_DIR := env
 ENVIRONMENT ?= production
+DEV_ENV ?= local
 
 # 絶対パスでenvファイルを渡す
 SHARED_ENV := $(CURDIR)/$(ENV_DIR)/shared.env
-ENV_FILE = $(CURDIR)/$(ENV_DIR)/$(1).env
+env_file = $(CURDIR)/$(ENV_DIR)/$(1).env
 
-compose = ENVIRONMENT=$(1) ENVIRONMENT_FILE=$(ENV_FILE) $(COMPOSE) --env-file $(SHARED_ENV) --env-file $(ENV_FILE)
+compose = ENVIRONMENT=$(1) ENVIRONMENT_FILE=$(call env_file,$(1)) $(COMPOSE) --env-file $(SHARED_ENV) --env-file $(call env_file,$(1))
 
 STACK := docker-compose.yml
 DEV_STACK := docker-compose.dev.yml
 EDGE_NETWORK ?= infra-edge-network
 BACKEND_NETWORK ?= infra-backend-network
 PROD_COMPOSE := $(call compose,$(ENVIRONMENT)) -f $(STACK)
-DEV_COMPOSE := $(call compose,local) -f $(STACK) -f $(DEV_STACK)
+DEV_COMPOSE := $(call compose,$(DEV_ENV)) -f $(STACK) -f $(DEV_STACK)
 
 .PHONY: prod-up prod-down prod-restart prod-logs
 
@@ -29,7 +30,7 @@ prod-restart: prod-down prod-up
 prod-logs:
 	$(PROD_COMPOSE) logs -f
 
-.PHONY: up down restart logs ps tidy network ensure-networks dev dev-down dev-logs seed-dev
+.PHONY: up down restart logs ps tidy network ensure-networks dev dev-down dev-logs
 
 up: ensure-networks
 	$(PROD_COMPOSE) up --build -d
@@ -70,8 +71,3 @@ dev-logs:
 
 dev-down:
 	$(DEV_COMPOSE) down
-
-seed-dev:
-	@echo "Generating fresh sample data..."
-	python3 ../scripts/generate_seed_data.py
-	$(DEV_COMPOSE) --profile seed run --rm mongo-seed

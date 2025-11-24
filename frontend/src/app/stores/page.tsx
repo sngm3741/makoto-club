@@ -1,6 +1,5 @@
 import { Pagination } from '@/components/common/pagination';
 import { StoreFilterPanel } from '@/features/stores/components/store-filter-panel';
-import { StoreHero } from '@/features/stores/components/store-hero';
 import { StoreListSection } from '@/features/stores/components/store-list-section';
 import { StoreSortBar } from '@/features/stores/components/store-sort-bar';
 import { fetchStores } from '@/lib/stores';
@@ -10,6 +9,7 @@ type StoresSearchParams = {
   area?: string;
   industry?: string;
   genre?: string;
+  name?: string;
   page?: string;
   sort?: string;
 };
@@ -33,19 +33,18 @@ export default async function StoresPage({
     area: resolved.area,
     industry: resolved.industry,
     genre: resolved.genre,
+    name: resolved.name,
     sort: resolved.sort,
     page,
   });
 
   return (
     <div className="space-y-8 pb-12">
-      <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
-        <StoreHero />
-        <StoreFilterPanel
-          initialPrefecture={resolved.prefecture}
-          initialIndustry={resolved.industry}
-        />
-      </div>
+      <StoreFilterPanel
+        initialPrefecture={resolved.prefecture}
+        initialIndustry={resolved.industry}
+        initialKeyword={resolved.name}
+      />
 
       <StoreSortBar options={SORT_OPTIONS} searchParams={resolved} />
 
@@ -61,6 +60,7 @@ export default async function StoresPage({
           area: resolved.area,
           industry: resolved.industry,
           genre: resolved.genre,
+          name: resolved.name,
           sort: resolved.sort,
         }}
       />

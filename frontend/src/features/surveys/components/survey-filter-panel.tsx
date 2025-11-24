@@ -1,21 +1,23 @@
 import { SearchForm } from '@/components/search/search-form';
-import { SectionCard, SectionHeader } from '@/components/common/section';
+import { SectionCard, SectionPillTitle } from '@/components/common/section';
 
 type SurveyFilterPanelProps = {
   initialPrefecture?: string;
   initialIndustry?: string;
+  initialKeyword?: string;
 };
 
-export const SurveyFilterPanel = ({ initialPrefecture, initialIndustry }: SurveyFilterPanelProps) => (
-  <SectionCard>
-    <SectionHeader
-      title="条件で絞り込む"
-      description="都道府県や業種を選んで、目的に合ったアンケートを表示します。"
+export const SurveyFilterPanel = ({ initialPrefecture, initialIndustry, initialKeyword }: SurveyFilterPanelProps) => (
+  <section className="space-y-3">
+    <SectionPillTitle
+      label="アンケート検索"
     />
-    <SearchForm
-      redirectPath="/surveys"
-      initialPrefecture={initialPrefecture}
-      initialIndustry={initialIndustry}
-    />
-  </SectionCard>
+      <SearchForm
+        redirectPath="/surveys"
+        initialPrefecture={initialPrefecture}
+        initialIndustry={initialIndustry}
+        initialKeyword={initialKeyword}
+        keywordParam="keyword"
+      />
+  </section>
 );

@@ -20,11 +20,11 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: `${SITE_NAME} | 風俗アンケートで働き先さがし`,
+    default: `${SITE_NAME} | 匿名店舗アンケートを見て次の店舗さがし`,
     template: `%s | ${SITE_NAME}`,
   },
   description:
-    '全国の風俗で働く女の子のためのアンケート検索サービス。実際の調査データから安心して働ける店舗を探せます。',
+    '働く女の子のためのアンケート検索サービス。実際の調査データから安心して働ける店舗を探せます。',
   metadataBase:
     process.env.NEXT_PUBLIC_SITE_URL || process.env.SITE_URL
       ? new URL((process.env.NEXT_PUBLIC_SITE_URL || process.env.SITE_URL) as string)
@@ -32,7 +32,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: `${SITE_NAME} | 風俗アンケートで働き先さがし`,
     description:
-      '全国の風俗で働く女の子のためのアンケート検索サービス。実際の調査データから安心して働ける店舗を探せます。',
+      '働く女の子のためのアンケート検索サービス。実際の調査データから安心して働ける店舗を探せます。',
     type: 'website',
   },
 };

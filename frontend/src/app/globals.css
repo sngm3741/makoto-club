@@ -29,3 +29,11 @@ a {
 *::selection {
   background-color: rgba(244, 114, 182, 0.35);
 }
+
+/* horizontal scroll gallery helper */
+.hide-scrollbar {
+  scrollbar-width: none;
+}
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}

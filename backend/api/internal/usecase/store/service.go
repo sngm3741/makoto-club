@@ -3,6 +3,7 @@ package store
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	common_vo "github.com/sngm3741/makoto-club-services/api/internal/domain/vo/common"
 	store_vo "github.com/sngm3741/makoto-club-services/api/internal/domain/vo/store"
@@ -57,6 +58,7 @@ func (s *service) FindByArea(ctx context.Context, area store_vo.Area, page commo
 
 // Search は任意条件で店舗一覧を取得する。
 func (s *service) Search(ctx context.Context, filter store_domain.SearchFilter, sort common_vo.SortKey, page common_vo.Pagination) ([]*store_domain.Store, int64, error) {
+	fmt.Println("サーチがよばれたよ")
 	return s.repo.Search(ctx, filter, sort, page)
 }
 

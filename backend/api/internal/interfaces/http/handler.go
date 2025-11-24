@@ -1,11 +1,15 @@
 package interfaces
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
+	"log"
 	"net/http"
 	"net/url"
+	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -22,6 +26,13 @@ import (
 	survey_usecase "github.com/sngm3741/makoto-club-services/api/internal/usecase/survey"
 )
 
+var (
+	// デフォルトで同一ネットワーク上の messenger-ingress に投げる。env で上書き可。
+	messengerGatewayURL         = strings.TrimSpace(envOrDefault("MESSENGER_GATEWAY_URL", "http://messenger-ingress:8080"))
+	messengerGatewayDestination = strings.TrimSpace(envOrDefault("MESSENGER_GATEWAY_DESTINATION", "discord-incoming"))
+	httpClient                  = &http.Client{Timeout: 5 * time.Second}
+)
+
 // handler は Store/Suvey ユースケースを束ねて HTTP I/O を扱う。
 type handler struct {
 	storeService  store_usecase.Service
@@ -31,6 +42,7 @@ type handler struct {
 // Handler は HTTP 層で外部公開されるハンドラ群を定義する。
 // すべて JSON API を想定しており、エラーレスポンスも JSON で返す。
 type Handler interface {
+	SubmitSurvey(w http.ResponseWriter, r *http.Request)
 	CreateStore(w http.ResponseWriter, r *http.Request)
 	CreateSurvey(w http.ResponseWriter, r *http.Request)
 
@@ -109,12 +121,16 @@ func (h *handler) ListSurveys(w http.ResponseWriter, r *http.Request) {
 	}
 
 	storeIDParam := query.Get("storeId")
-	prefectureParam := query.Get("prefecture")
-
 	var (
 		surveys []*survey_domain.Survey
 		total   int64
 	)
+
+	filter, err := buildSurveyAdminFilter(query)
+	if err != nil {
+		respondError(w, http.StatusBadRequest, err.Error())
+		return
+	}
 
 	switch {
 	case storeIDParam != "":
@@ -124,15 +140,9 @@ func (h *handler) ListSurveys(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		surveys, total, err = h.surveyService.GetByStore(ctx, storeID, sortKey, pagination)
-	case prefectureParam != "":
-		pref, err := store_vo.NewPrefecture(prefectureParam)
-		if err != nil {
-			respondError(w, http.StatusBadRequest, err.Error())
-			return
-		}
-		surveys, total, err = h.surveyService.GetByPrefecture(ctx, pref, sortKey, pagination)
 	default:
-		surveys, total, err = h.surveyService.ListAll(ctx, sortKey, pagination)
+		// 公開一覧も AdminFilter を使って prefecture / industry / keyword で検索できるようにする。
+		surveys, total, err = h.surveyService.ListAdmin(ctx, filter, sortKey, pagination)
 	}
 
 	if err != nil {
@@ -149,7 +159,13 @@ func (h *handler) ListAdminSurveys(w http.ResponseWriter, r *http.Request) {
 	pagination := paginationFromRequest(r)
 	sortKey := defaultSortKey()
 
-	surveys, total, err := h.surveyService.ListAll(ctx, sortKey, pagination)
+	filter, err := buildSurveyAdminFilter(r.URL.Query())
+	if err != nil {
+		respondError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	surveys, total, err := h.surveyService.ListAdmin(ctx, filter, sortKey, pagination)
 	if err != nil {
 		respondError(w, http.StatusInternalServerError, err.Error())
 		return
@@ -202,7 +218,20 @@ func (h *handler) GetSurveyByID(w http.ResponseWriter, r *http.Request) {
 	respondJSON(w, http.StatusOK, newSurveyResponse(survey))
 }
 
-// CreateSurvey はアンケートを新規作成する。
+// SubmitSurvey は一般ユーザーの投稿を受け取り、DB には保存せず Discord 通知だけ行う。
+func (h *handler) SubmitSurvey(w http.ResponseWriter, r *http.Request) {
+	var payload surveyRequest
+	if err := decodeJSON(r, &payload); err != nil {
+		respondError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	// HTTPリクエストのキャンセルに引きずられないよう、バックグラウンドで通知を送る。
+	go sendSurveyToMessenger(context.Background(), payload)
+	respondJSON(w, http.StatusAccepted, map[string]string{"status": "accepted"})
+}
+
+// CreateSurvey は管理者が店舗ID付きで登録する経路。
 // 店舗メタデータは storeID から取得し、Survey 集約へコピーする。
 func (h *handler) CreateSurvey(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
@@ -468,6 +497,31 @@ func sortKeyFromQuery(value string) (common_vo.SortKey, error) {
 	return common_vo.NewSortKey(value)
 }
 
+func buildSurveyAdminFilter(values url.Values) (survey_domain.AdminFilter, error) {
+	var filter survey_domain.AdminFilter
+
+	if v := strings.TrimSpace(values.Get("prefecture")); v != "" {
+		pref, err := store_vo.NewPrefecture(v)
+		if err != nil {
+			return filter, err
+		}
+		filter.Prefecture = &pref
+	}
+
+	if v := strings.TrimSpace(values.Get("industry")); v != "" {
+		industry, err := store_vo.NewIndustry(v)
+		if err != nil {
+			return filter, err
+		}
+		filter.Industry = &industry
+	}
+
+	if kw := strings.TrimSpace(values.Get("keyword")); kw != "" {
+		filter.Keyword = kw
+	}
+	return filter, nil
+}
+
 func defaultSortKey() common_vo.SortKey {
 	key, _ := common_vo.NewSortKey("")
 	return key
@@ -494,6 +548,116 @@ type errorResponse struct {
 // respondError は error フィールドのみを持つ JSON 応答を返す。
 func respondError(w http.ResponseWriter, status int, message string) {
 	respondJSON(w, status, errorResponse{Error: message})
+}
+
+func sendSurveyToMessenger(ctx context.Context, payload surveyRequest) {
+	if messengerGatewayURL == "" {
+		return
+	}
+
+	// 実際のリクエストは独立したタイムアウト付きのバックグラウンドコンテキストで送る。
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	log.Printf("sendSurveyToMessenger dest=%s url=%s", messengerGatewayDestination, messengerGatewayURL)
+	storeLabel := strings.TrimSpace(payload.StoreID)
+	if storeLabel == "" {
+		parts := []string{}
+		if v := strings.TrimSpace(payload.StoreName); v != "" {
+			parts = append(parts, v)
+		}
+		if v := strings.TrimSpace(payload.BranchName); v != "" {
+			parts = append(parts, v)
+		}
+		if len(parts) > 0 {
+			storeLabel = strings.Join(parts, " / ")
+		} else {
+			storeLabel = "anonymous"
+		}
+	}
+
+	lines := []string{
+		fmt.Sprintf("店舗名: %s", formatOrNA(payload.StoreName)),
+		fmt.Sprintf("支店名: %s", formatOrNA(payload.BranchName)),
+		fmt.Sprintf("都道府県: %s", formatOrNA(payload.Prefecture)),
+		fmt.Sprintf("業種: %s", formatOrNA(payload.Industry)),
+		fmt.Sprintf("働いた時期: %s", formatOrNA(payload.VisitedPeriod)),
+		fmt.Sprintf("勤務形態: %s", formatOrNA(payload.WorkType)),
+		fmt.Sprintf("年齢: %d", payload.Age),
+		fmt.Sprintf("スペック評価: %d", payload.SpecScore),
+		fmt.Sprintf("待機時間(時間): %d", payload.WaitTimeHours),
+		fmt.Sprintf("平均稼ぎ: %d", payload.AverageEarning),
+		fmt.Sprintf("総合評価: %.1f", payload.Rating),
+	}
+
+	lines = append(lines, fmt.Sprintf("客層について: %s", trimOrEmpty(payload.CustomerComment)))
+	lines = append(lines, fmt.Sprintf("スタッフについて: %s", trimOrEmpty(payload.StaffComment)))
+	lines = append(lines, fmt.Sprintf("職場の環境について: %s", trimOrEmpty(payload.WorkEnvironmentComment)))
+	if payload.EmailAddress != nil {
+		lines = append(lines, fmt.Sprintf("連絡先: %s", strings.TrimSpace(*payload.EmailAddress)))
+	}
+	if len(payload.ImageURLs) > 0 {
+		lines = append(lines, fmt.Sprintf("画像URL: %s", strings.Join(payload.ImageURLs, ", ")))
+	}
+
+	text := "【新規アンケート】\n" + strings.Join(lines, "\n")
+
+	reqBody := map[string]string{
+		"destination": messengerGatewayDestination,
+		"userId":      storeLabel,
+		"text":        text,
+	}
+
+	buf, err := json.Marshal(reqBody)
+	if err != nil {
+		log.Printf("failed to marshal messenger request: %v", err)
+		return
+	}
+
+	url := messengerGatewayURL
+	if !strings.HasSuffix(url, "/send") {
+		url = strings.TrimRight(url, "/") + "/send"
+	}
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(buf))
+	if err != nil {
+		log.Printf("failed to build messenger request: %v", err)
+		return
+	}
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := httpClient.Do(req)
+	if err != nil {
+		log.Printf("failed to send messenger request: %v", err)
+		return
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		log.Printf("messenger request returned status %d", resp.StatusCode)
+	}
+}
+
+func envOrDefault(key, fallback string) string {
+	if v := strings.TrimSpace(os.Getenv(key)); v != "" {
+		return v
+	}
+	return fallback
+}
+
+func formatOrNA(s string) string {
+	s = strings.TrimSpace(s)
+	if s == "" {
+		return "未入力"
+	}
+	return s
+}
+
+func trimOrEmpty(s *string) string {
+	if s == nil {
+		return ""
+	}
+	return strings.TrimSpace(*s)
 }
 
 // buildStoreEntity は HTTP リクエストを VO 群へ変換し、Store 集約を生成する。
@@ -631,7 +795,11 @@ type storeListResponse struct {
 }
 
 type surveyRequest struct {
-	StoreID                string   `json:"storeId"`
+	StoreName              string   `json:"storeName,omitempty"`
+	BranchName             string   `json:"branchName,omitempty"`
+	Prefecture             string   `json:"prefecture,omitempty"`
+	Industry               string   `json:"industry,omitempty"`
+	StoreID                string   `json:"storeId,omitempty"`
 	VisitedPeriod          string   `json:"visitedPeriod"`
 	WorkType               string   `json:"workType"`
 	Age                    int      `json:"age"`
