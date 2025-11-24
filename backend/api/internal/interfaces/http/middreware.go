@@ -71,7 +71,7 @@ func corsMiddleware(allowedOrigins []string) func(http.Handler) http.Handler {
 func setCORSHeaders(w http.ResponseWriter, origin string) {
 	w.Header().Set("Access-Control-Allow-Origin", origin)
 	w.Header().Set("Vary", "Origin")
-	w.Header().Set("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,OPTIONS")
+	w.Header().Set("Access-Control-Allow-Methods", "GET,POST,PUT,PATCH,DELETE,OPTIONS")
 	w.Header().Set("Access-Control-Allow-Headers", "Authorization, Content-Type")
 	w.Header().Set("Access-Control-Allow-Credentials", "true")
 }
