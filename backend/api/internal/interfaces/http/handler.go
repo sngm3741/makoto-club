@@ -31,6 +31,7 @@ var (
 	// デフォルトで同一ネットワーク上の messenger-ingress に投げる。env で上書き可。
 	messengerGatewayURL         = strings.TrimSpace(envOrDefault("MESSENGER_GATEWAY_URL", "http://messenger-ingress:8080"))
 	messengerGatewayDestination = strings.TrimSpace(envOrDefault("MESSENGER_GATEWAY_DESTINATION", "discord-incoming"))
+	adminStoresURL              = strings.TrimSpace(envOrDefault("ADMIN_STORES_BASE_URL", "https://makoto-club-web.vercel.app/admin/stores"))
 	httpClient                  = &http.Client{Timeout: 5 * time.Second}
 )
 
@@ -600,6 +601,7 @@ func sendSurveyToMessenger(ctx context.Context, payload surveyRequest) {
 	if len(payload.ImageURLs) > 0 {
 		lines = append(lines, fmt.Sprintf("画像URL: %s", strings.Join(payload.ImageURLs, ", ")))
 	}
+	lines = append(lines, fmt.Sprintf("アンケートを追加する: %s", adminStoresURL))
 
 	text := "【新規アンケート】\n" + strings.Join(lines, "\n")
 
