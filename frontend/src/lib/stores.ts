@@ -24,6 +24,7 @@ type ApiStore = {
   area?: string;
   industry: string;
   genre?: string;
+  unitPrice?: number | null;
   businessHours?: { open: string; close: string };
   averageRating: number;
   createdAt?: string;
@@ -127,6 +128,7 @@ export async function fetchStores(params: StoreSearchParams) {
           area: store.area,
           category: store.industry,
           genre: store.genre,
+          unitPrice: store.unitPrice,
           createdAt: store.createdAt,
           updatedAt: store.updatedAt,
           averageRating: stats.averageRating ?? store.averageRating,
@@ -147,6 +149,7 @@ export async function fetchStores(params: StoreSearchParams) {
           area: store.area,
           category: store.industry,
           genre: store.genre,
+          unitPrice: store.unitPrice,
           createdAt: store.createdAt,
           updatedAt: store.updatedAt,
           averageRating: store.averageRating,
@@ -192,6 +195,7 @@ export async function fetchStoreDetail(storeId: string): Promise<StoreDetail> {
     area: store.area,
     category: store.industry,
     genre: store.genre,
+    unitPrice: store.unitPrice,
     businessHours: store.businessHours,
     createdAt: store.createdAt,
     updatedAt: store.updatedAt,

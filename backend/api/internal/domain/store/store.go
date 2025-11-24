@@ -17,6 +17,7 @@ type Store struct {
 	industry      store_vo.Industry
 	genre         *store_vo.Genre
 	businessHours *store_vo.BusinessHours
+	unitPrice     *store_vo.UnitPrice
 	averageRating store_vo.AverageRating
 	createdAt     common_vo.Timestamp
 	updatedAt     common_vo.Timestamp
@@ -49,6 +50,15 @@ func WithBusinessHours(hours store_vo.BusinessHours) Option {
 	return func(s *Store) error {
 		h := hours
 		s.businessHours = &h
+		return nil
+	}
+}
+
+// WithUnitPrice は女子給(60分単価)を設定する。
+func WithUnitPrice(price store_vo.UnitPrice) Option {
+	return func(s *Store) error {
+		p := price
+		s.unitPrice = &p
 		return nil
 	}
 }
@@ -144,6 +154,9 @@ func (s *Store) validate() error {
 	if s.businessHours != nil && !s.businessHours.Validate() {
 		return errors.New("営業時間の入力値が不正です")
 	}
+	if s.unitPrice != nil && !s.unitPrice.Validate() {
+		return errors.New("女子給(60分単価)の入力値が不正です")
+	}
 	if !s.averageRating.IsZero() && !s.averageRating.Validate() {
 		return errors.New("平均総評の入力値が不正です")
 	}
@@ -200,6 +213,11 @@ func (s *Store) Genre() *store_vo.Genre {
 // BusinessHours は営業時間を返す（未設定の場合は nil）。
 func (s *Store) BusinessHours() *store_vo.BusinessHours {
 	return s.businessHours
+}
+
+// UnitPrice は女子給(60分単価)を返す。
+func (s *Store) UnitPrice() *store_vo.UnitPrice {
+	return s.unitPrice
 }
 
 // AverageRating は平均総評を返す。

@@ -19,6 +19,7 @@ type StoreRequestPayload = {
   area?: string | null;
   industry: string;
   genre?: string | null;
+  unitPrice?: number | null;
   businessHours?: {
     open: string;
     close: string;
@@ -48,6 +49,7 @@ export function AdminStoreEditor({ initialStore }: AdminStoreEditorProps) {
     area: initialStore?.area ?? '',
     industry: initialStore?.industry ?? '',
     genre: initialStore?.genre ?? '',
+    unitPrice: initialStore?.unitPrice?.toString() ?? '',
     open: initialStore?.businessHours?.open ?? '',
     close: initialStore?.businessHours?.close ?? '',
   });
@@ -55,6 +57,42 @@ export function AdminStoreEditor({ initialStore }: AdminStoreEditorProps) {
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [showCreatedModal, setShowCreatedModal] = useState(false);
+  const currentBaseline = store ?? initialStore;
+
+  const baselineForm = useMemo(() => {
+    if (!currentBaseline) return null;
+    return {
+      name: currentBaseline.name ?? '',
+      branchName: currentBaseline.branchName ?? '',
+      prefecture: currentBaseline.prefecture ?? '',
+      area: currentBaseline.area ?? '',
+      industry: currentBaseline.industry ?? '',
+      genre: currentBaseline.genre ?? '',
+      unitPrice:
+        currentBaseline.unitPrice !== undefined && currentBaseline.unitPrice !== null
+          ? String(currentBaseline.unitPrice)
+          : '',
+      open: currentBaseline.businessHours?.open ?? '',
+      close: currentBaseline.businessHours?.close ?? '',
+    };
+  }, [currentBaseline]);
+
+  const isDirty = useMemo(() => {
+    if (isNew) return true;
+    if (!baselineForm) return false;
+    return (
+      form.name !== baselineForm.name ||
+      form.branchName !== baselineForm.branchName ||
+      form.prefecture !== baselineForm.prefecture ||
+      form.area !== baselineForm.area ||
+      form.industry !== baselineForm.industry ||
+      form.genre !== baselineForm.genre ||
+      form.unitPrice !== baselineForm.unitPrice ||
+      form.open !== baselineForm.open ||
+      form.close !== baselineForm.close
+    );
+  }, [baselineForm, form, isNew]);
 
   const title = isNew ? '新規店舗の登録' : '店舗情報の編集';
 
@@ -84,6 +122,24 @@ export function AdminStoreEditor({ initialStore }: AdminStoreEditorProps) {
       industry: form.industry,
       genre: form.genre.trim() ? form.genre.trim() : null,
     };
+    if (form.unitPrice) {
+      const parsed = Number(form.unitPrice);
+      if (!Number.isFinite(parsed)) {
+        setError('女子給(60分単価)は数値で入力してください。');
+        return null;
+      }
+      if (parsed < 1000 || parsed > 100000) {
+        setError('女子給(60分単価)は1,000〜100,000の範囲で入力してください。');
+        return null;
+      }
+      if (parsed % 1000 !== 0) {
+        setError('女子給(60分単価)は1,000円単位で入力してください。');
+        return null;
+      }
+      payload.unitPrice = parsed;
+    } else {
+      payload.unitPrice = null;
+    }
     if (form.open && form.close) {
       payload.businessHours = { open: form.open, close: form.close };
     } else {
@@ -115,21 +171,38 @@ export function AdminStoreEditor({ initialStore }: AdminStoreEditorProps) {
         throw new Error(body || '店舗情報の保存に失敗しました');
       }
       const updated = (await response.json()) as AdminStoreRecord;
-      setStore(updated);
-      setForm({
-        name: updated.name,
-        branchName: updated.branchName ?? '',
-        prefecture: updated.prefecture,
-        area: updated.area ?? '',
-        industry: updated.industry,
-        genre: updated.genre ?? '',
-        open: updated.businessHours?.open ?? '',
-        close: updated.businessHours?.close ?? '',
-      });
-      setMessage('店舗情報を保存しました。');
       if (isNew) {
-        router.replace(`/admin/stores/${updated.id}`);
+        // 新規作成後はフォームを初期化し、メタ情報も非表示に戻す
+        setStore(undefined);
+        setForm({
+          name: '',
+          branchName: '',
+          prefecture: '',
+          area: '',
+          industry: '',
+          genre: '',
+          unitPrice: '',
+          open: '',
+          close: '',
+        });
+        setMessage(null);
+        setShowCreatedModal(true);
+        // 同じ新規画面に留まるが、空状態に戻す
       } else {
+        setStore(updated);
+        setForm({
+          name: updated.name,
+          branchName: updated.branchName ?? '',
+          prefecture: updated.prefecture,
+          area: updated.area ?? '',
+          industry: updated.industry,
+          genre: updated.genre ?? '',
+          unitPrice:
+            updated.unitPrice !== undefined && updated.unitPrice !== null ? String(updated.unitPrice) : '',
+          open: updated.businessHours?.open ?? '',
+          close: updated.businessHours?.close ?? '',
+        });
+        setMessage('店舗情報を保存しました。');
         router.refresh();
       }
     } catch (err) {
@@ -189,6 +262,30 @@ export function AdminStoreEditor({ initialStore }: AdminStoreEditorProps) {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6 rounded-3xl border border-slate-100 bg-white p-6 shadow-sm">
+      {showCreatedModal ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 px-4">
+          <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl">
+            <h2 className="text-lg font-semibold text-slate-900">店舗の登録をしました</h2>
+            <p className="mt-2 text-sm text-slate-600">引き続き、店舗一覧から確認や編集ができます。</p>
+            <div className="mt-4 flex gap-2">
+              <a
+                href="/admin/stores"
+                className="flex-1 rounded-full bg-pink-600 px-4 py-2 text-center text-sm font-semibold text-white shadow hover:bg-pink-500"
+              >
+                店舗一覧へ
+              </a>
+              <button
+                type="button"
+                onClick={() => setShowCreatedModal(false)}
+                className="rounded-full border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+              >
+                閉じる
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
       <header>
         <h1 className="text-2xl font-semibold text-slate-900">{title}</h1>
         <p className="text-sm text-slate-500">
@@ -209,6 +306,7 @@ export function AdminStoreEditor({ initialStore }: AdminStoreEditorProps) {
             name="name"
             value={form.name}
             onChange={handleInputChange}
+            placeholder="やりすぎ娘"
             className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-pink-400 focus:outline-none"
           />
         </div>
@@ -221,6 +319,7 @@ export function AdminStoreEditor({ initialStore }: AdminStoreEditorProps) {
             name="branchName"
             value={form.branchName}
             onChange={handleInputChange}
+            placeholder="五反田店"
             className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-pink-400 focus:outline-none"
           />
         </div>
@@ -301,30 +400,55 @@ export function AdminStoreEditor({ initialStore }: AdminStoreEditorProps) {
           </select>
         </div>
         <div className="space-y-1">
-          <label className="text-xs font-semibold text-slate-600" htmlFor="open">
-            営業開始時間 (HH:MM)
+          <label className="text-xs font-semibold text-slate-600" htmlFor="unitPrice">
+            女子給 (60分単価・円)
           </label>
           <input
-            id="open"
-            name="open"
-            value={form.open}
+            id="unitPrice"
+            name="unitPrice"
+            type="number"
+            inputMode="numeric"
+            min={1000}
+            max={100000}
+            step={1000}
+            placeholder="10000"
+            value={form.unitPrice}
             onChange={handleInputChange}
-            placeholder="10:00"
             className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-pink-400 focus:outline-none"
           />
+          <p className="text-xs text-slate-500">
+            任意 / 1,000〜100,000 の範囲で、1,000円刻みで入力してください。
+          </p>
         </div>
-        <div className="space-y-1">
-          <label className="text-xs font-semibold text-slate-600" htmlFor="close">
-            営業終了時間 (HH:MM)
-          </label>
-          <input
-            id="close"
-            name="close"
-            value={form.close}
-            onChange={handleInputChange}
-            placeholder="23:00"
-            className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-pink-400 focus:outline-none"
-          />
+        <div className="md:col-span-2">
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1">
+              <label className="text-xs font-semibold text-slate-600" htmlFor="open">
+                営業開始時間 (HH:MM)
+              </label>
+              <input
+                id="open"
+                name="open"
+                value={form.open}
+                onChange={handleInputChange}
+                placeholder="10:00"
+                className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-pink-400 focus:outline-none"
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs font-semibold text-slate-600" htmlFor="close">
+                営業終了時間 (HH:MM)
+              </label>
+              <input
+                id="close"
+                name="close"
+                value={form.close}
+                onChange={handleInputChange}
+                placeholder="23:00"
+                className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-pink-400 focus:outline-none"
+              />
+            </div>
+          </div>
         </div>
       </section>
 
@@ -339,9 +463,9 @@ export function AdminStoreEditor({ initialStore }: AdminStoreEditorProps) {
         <button
           type="submit"
           className="rounded-full bg-pink-600 px-4 py-2 text-sm font-semibold text-white shadow hover:bg-pink-500 disabled:opacity-60"
-          disabled={saving}
+          disabled={saving || (!isNew && !isDirty)}
         >
-          {saving ? '保存中…' : '保存する'}
+          {isNew ? (saving ? '保存中…' : '保存する') : saving ? '更新中…' : '更新する'}
         </button>
         {!isNew ? (
           <button

@@ -39,25 +39,31 @@ export function StoreDetailContent({ store }: StoreDetailProps) {
               <h1 className="text-2xl font-semibold text-slate-900">{store.storeName}</h1>
               {store.branchName ? <p className="text-base text-slate-500">（{store.branchName}）</p> : null}
             </div>
-            <p className="text-sm text-slate-500">
-              業種:{' '}
-              <Link
-                href={`/stores?industry=${encodeURIComponent(store.category)}`}
-                className="font-semibold text-slate-600 underline-offset-2 hover:text-pink-600 hover:underline"
-              >
-                {store.category}
-              </Link>
+            <p className="text-sm text-slate-500 flex flex-wrap items-center gap-2">
+              <span>
+                
+                <Link
+                  href={`/stores?industry=${encodeURIComponent(store.category)}`}
+                  className="font-semibold text-slate-600 underline-offset-2 hover:text-pink-600 hover:underline"
+                >
+                  {store.category}
+                </Link>
+              </span>
               {store.genre ? (
-                <>
-                  {' '}
-                  / ジャンル:{' '}
+                <span>
+                  / {' '}
                   <Link
                     href={`/stores?genre=${encodeURIComponent(store.genre)}`}
                     className="font-semibold text-slate-600 underline-offset-2 hover:text-pink-600 hover:underline"
                   >
                     {store.genre}
                   </Link>
-                </>
+                </span>
+              ) : null}
+              {store.unitPrice !== undefined && store.unitPrice !== null ? (
+                <span className="text-slate-600">
+                  / 単価(60分): <span className="font-semibold text-pink-600">{store.unitPrice.toLocaleString()}円</span>
+                </span>
               ) : null}
             </p>
             {store.businessHours ? (

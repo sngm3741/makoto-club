@@ -711,6 +711,13 @@ func buildStoreEntity(id store_vo.ID, payload storeRequest) (*store_domain.Store
 		}
 		options = append(options, store_domain.WithBusinessHours(hours))
 	}
+	if payload.UnitPrice != nil {
+		price, err := store_vo.NewUnitPrice(*payload.UnitPrice)
+		if err != nil {
+			return nil, err
+		}
+		options = append(options, store_domain.WithUnitPrice(price))
+	}
 
 	return store_domain.NewStore(id, name, pref, industry, options...)
 }
@@ -737,6 +744,10 @@ func newStoreResponse(entity *store_domain.Store) storeResponse {
 	if genre := entity.Genre(); genre != nil {
 		value := genre.Value()
 		resp.Genre = &value
+	}
+	if price := entity.UnitPrice(); price != nil {
+		v := price.Value()
+		resp.UnitPrice = &v
 	}
 	if hours := entity.BusinessHours(); hours != nil {
 		resp.BusinessHours = &businessHoursPayload{
@@ -771,6 +782,7 @@ type storeRequest struct {
 	Area          *string               `json:"area"`
 	Industry      string                `json:"industry"`
 	Genre         *string               `json:"genre"`
+	UnitPrice     *int                  `json:"unitPrice"`
 	BusinessHours *businessHoursPayload `json:"businessHours"`
 }
 
@@ -787,6 +799,7 @@ type storeResponse struct {
 	Area          *string               `json:"area,omitempty"`
 	Industry      string                `json:"industry"`
 	Genre         *string               `json:"genre,omitempty"`
+	UnitPrice     *int                  `json:"unitPrice,omitempty"`
 	BusinessHours *businessHoursPayload `json:"businessHours,omitempty"`
 	AverageRating float64               `json:"averageRating"`
 	CreatedAt     time.Time             `json:"createdAt"`

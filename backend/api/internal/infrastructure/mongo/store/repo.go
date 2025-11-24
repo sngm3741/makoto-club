@@ -225,6 +225,7 @@ type document struct {
 	Area          *string                `bson:"area,omitempty"`
 	Industry      string                 `bson:"industry"`
 	Genre         *string                `bson:"genre,omitempty"`
+	UnitPrice     *int                   `bson:"unitPrice,omitempty"`
 	BusinessHours *businessHoursDocument `bson:"businessHours,omitempty"`
 	AverageRating float64                `bson:"averageRating"`
 	CreatedAt     time.Time              `bson:"createdAt"`
@@ -264,6 +265,10 @@ func newDocument(entity *store_domain.Store) (*document, error) {
 	if genre := entity.Genre(); genre != nil {
 		value := genre.Value()
 		doc.Genre = &value
+	}
+	if price := entity.UnitPrice(); price != nil {
+		v := price.Value()
+		doc.UnitPrice = &v
 	}
 	if hours := entity.BusinessHours(); hours != nil {
 		doc.BusinessHours = &businessHoursDocument{
@@ -318,6 +323,13 @@ func (d *document) toEntity() (*store_domain.Store, error) {
 			return nil, err
 		}
 		opts = append(opts, store_domain.WithGenre(genre))
+	}
+	if d.UnitPrice != nil {
+		price, err := store_vo.NewUnitPrice(*d.UnitPrice)
+		if err != nil {
+			return nil, err
+		}
+		opts = append(opts, store_domain.WithUnitPrice(price))
 	}
 	if d.BusinessHours != nil && d.BusinessHours.Open != "" && d.BusinessHours.Close != "" {
 		if hours, err := store_vo.NewBusinessHours(d.BusinessHours.Open, d.BusinessHours.Close); err == nil {

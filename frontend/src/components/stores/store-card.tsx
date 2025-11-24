@@ -44,7 +44,7 @@ export const StoreCard = ({ store }: StoreCardProps) => {
       onClick={handleNavigateDetail}
       onKeyDown={handleKeyDown}
       className="flex cursor-pointer flex-col gap-4 rounded-2xl border border-slate-100 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-pink-300"
-      aria-label={`${store.storeName}の店舗詳細`}
+      aria-label={`${store.storeName}${store.branchName ? `（${store.branchName}）` : ''}の店舗詳細`}
     >
       <div className="flex items-center justify-between text-xs text-slate-500">
         <Link
@@ -63,10 +63,13 @@ export const StoreCard = ({ store }: StoreCardProps) => {
         </Link>
       </div>
       <div>
-        <h3 className="text-lg font-semibold text-slate-900">{store.storeName}</h3>
-		<p className="mt-1 text-sm text-slate-500">
-			アンケート件数: <strong className="font-semibold text-slate-700">{surveyCount}</strong>
-		</p>
+        <h3 className="text-lg font-semibold text-slate-900">
+          {store.storeName}
+          {store.branchName ? <span className="ml-2 text-sm font-normal text-slate-500">（{store.branchName}）</span> : null}
+        </h3>
+        <p className="mt-1 text-sm text-slate-500">
+          アンケート件数: <strong className="font-semibold text-slate-700">{surveyCount}</strong>
+        </p>
         <div className="mt-2 flex items-center gap-2 text-xs text-slate-500">
           <StarDisplay value={store.averageRating} />
           <span>{ratingDisplay} / 5</span>

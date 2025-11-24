@@ -48,6 +48,7 @@ export interface StoreSummary {
   averageEarningLabel?: string;
   waitTimeHours: number;
   waitTimeLabel?: string;
+  unitPrice?: number | null;
   surveyCount: number;
   helpfulCount?: number;
   reviewCount?: number; // 旧API互換
