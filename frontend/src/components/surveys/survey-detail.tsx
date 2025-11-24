@@ -1,6 +1,7 @@
 import Link from 'next/link';
 
 import { MetricCard, StarDisplay } from '@/components/common/metrics';
+import { StorePhotoGallery } from '@/components/stores/store-photo-gallery';
 import type { SurveyDetail } from '@/types/survey';
 import { formatDateTime, formatRelativeVisitedPeriod } from '@/utils/date';
 
@@ -9,6 +10,10 @@ type SurveyDetailProps = {
 };
 
 export const SurveyDetailContent = ({ survey }: SurveyDetailProps) => {
+  const snippet = pickSnippetFromSurvey(survey);
+  const galleryImages =
+    survey.imageUrls?.filter(Boolean).map((url) => ({ url, surveyId: survey.id, snippet })) ?? [];
+
   return (
     <article className="space-y-6 rounded-3xl border border-slate-100 bg-white p-6 shadow-sm">
       <header className="space-y-2">
@@ -82,25 +87,12 @@ export const SurveyDetailContent = ({ survey }: SurveyDetailProps) => {
         )}
       </section>
 
-      {survey.imageUrls && survey.imageUrls.length > 0 ? (
+      {galleryImages.length > 0 ? (
         <section className="space-y-3">
-          <div className="flex items-baseline justify-between">
+          <div className="flex items-center gap-2">
+            <p className="text-sm font-semibold text-slate-700">投稿写真</p>
           </div>
-          <div className="hide-scrollbar rounded-2xl border border-slate-100 bg-white/70 p-4 shadow-inner">
-            <div className="flex gap-4 overflow-x-auto scroll-smooth">
-              {survey.imageUrls.map((url, index) => (
-                <figure
-                  key={`${url}-${index}`}
-                  className="group relative aspect-[4/3] min-w-[260px] max-w-md flex-1 snap-center overflow-hidden rounded-xl border border-slate-200 bg-gradient-to-br from-slate-50 to-white shadow-sm ring-1 ring-white/60 transition hover:-translate-y-1 hover:shadow-md"
-                >
-                  <img src={url} alt={`アンケート写真 ${index + 1}`} className="h-full w-full object-cover" loading="lazy" />
-                  <figcaption className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/55 to-transparent px-3 py-2 text-xs text-white opacity-90">
-                    {survey.storeName} の投稿写真 #{index + 1}
-                  </figcaption>
-                </figure>
-              ))}
-            </div>
-          </div>
+          <StorePhotoGallery images={galleryImages} storeName={survey.storeName} />
         </section>
       ) : null}
 
@@ -120,4 +112,11 @@ const renderCommentSection = (title: string, body?: string) => {
       <p className="mt-1 whitespace-pre-wrap text-sm leading-relaxed text-slate-700">{body}</p>
     </div>
   );
+};
+
+const pickSnippetFromSurvey = (survey: SurveyDetail) => {
+  const candidates = [survey.customerComment, survey.staffComment, survey.workEnvironmentComment];
+  const text = candidates.find((v) => v && v.trim().length > 0)?.trim();
+  if (!text) return undefined;
+  return text.length > 100 ? `${text.slice(0, 100)}...` : text;
 };
