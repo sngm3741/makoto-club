@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"net/url"
@@ -633,8 +634,11 @@ func sendSurveyToMessenger(ctx context.Context, payload surveyRequest) {
 	}
 	defer resp.Body.Close()
 
+	log.Printf("messenger request status=%d", resp.StatusCode)
+
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		log.Printf("messenger request returned status %d", resp.StatusCode)
+		bodyBytes, _ := io.ReadAll(resp.Body)
+		log.Printf("messenger request returned status %d body=%s", resp.StatusCode, string(bodyBytes))
 	}
 }
 
