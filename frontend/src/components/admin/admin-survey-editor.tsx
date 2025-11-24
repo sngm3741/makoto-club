@@ -581,7 +581,7 @@ export function AdminSurveyEditor({ initialSurvey, mode = 'edit' }: AdminSurveyE
         const endpoint = isCreateMode
           ? `${API_BASE}/api/admin/surveys`
           : `${API_BASE}/api/admin/surveys/${survey.id}`;
-        const method = isCreateMode ? 'POST' : 'PATCH';
+        const method = isCreateMode ? 'POST' : 'PUT';
 
         const response = await fetch(endpoint, {
           method,
