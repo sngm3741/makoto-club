@@ -193,16 +193,16 @@ export function AdminSurveyEditor({ initialSurvey, mode = 'edit' }: AdminSurveyE
   const [survey, setSurvey] = useState<AdminSurvey>(initialSurvey);
   const [form, setForm] = useState<SurveyFormState>({
     storeId: initialSurvey.storeId ?? '',
-    storeName: initialSurvey.storeName,
+    storeName: initialSurvey.storeName ?? '',
     branchName: initialSurvey.branchName ?? '',
-    prefecture: initialSurvey.prefecture,
-    category: canonicalCategoryValue(initialSurvey.category || initialSurvey.industry),
+    prefecture: initialSurvey.prefecture ?? '',
+    category: canonicalCategoryValue(initialSurvey.category || initialSurvey.industry) ?? '',
     workType: initialSurvey.workType ?? WORK_TYPE_OPTIONS[0].value,
     visitedAt: initialSurvey.visitedAt || initialSurvey.visitedPeriod || '',
-    age: String(initialSurvey.age),
-    specScore: String(initialSurvey.specScore),
-    waitTimeHours: String(initialSurvey.waitTimeHours),
-    averageEarning: String(initialSurvey.averageEarning),
+    age: String(initialSurvey.age ?? ''),
+    specScore: String(initialSurvey.specScore ?? ''),
+    waitTimeHours: String(initialSurvey.waitTimeHours ?? ''),
+    averageEarning: String(initialSurvey.averageEarning ?? ''),
     customerComment: initialSurvey.customerComment ?? '',
     staffComment: initialSurvey.staffComment ?? '',
     workEnvironmentComment: initialSurvey.workEnvironmentComment ?? '',
@@ -212,7 +212,7 @@ export function AdminSurveyEditor({ initialSurvey, mode = 'edit' }: AdminSurveyE
       name: `画像${index + 1}`,
       size: 0,
     })),
-    rating: initialSurvey.rating.toString(),
+    rating: (initialSurvey.rating ?? '').toString(),
   });
   const [statusForm, setStatusForm] = useState({
     status: initialSurvey.status,
@@ -456,7 +456,8 @@ export function AdminSurveyEditor({ initialSurvey, mode = 'edit' }: AdminSurveyE
       setError('API_BASE_URL が未設定です');
       return;
     }
-    if (!form.storeName.trim()) {
+    const storeName = (form.storeName ?? '').trim();
+    if (!storeName) {
       setStoreSearchError('店舗名を入力してください');
       return;
     }
@@ -473,8 +474,8 @@ export function AdminSurveyEditor({ initialSurvey, mode = 'edit' }: AdminSurveyE
     setStoreSearchError(null);
     try {
       const payload = {
-        name: form.storeName.trim(),
-        branchName: form.branchName.trim(),
+        name: storeName,
+        branchName: (form.branchName ?? '').trim(),
         prefecture: form.prefecture,
         industryCode: form.category,
       };
@@ -547,17 +548,21 @@ export function AdminSurveyEditor({ initialSurvey, mode = 'edit' }: AdminSurveyE
       setMessage(null);
       setError(null);
       try {
-        const normalizeOptional = (value: string) => {
+        const normalizeOptional = (value?: string) => {
+          if (!value) return undefined;
           const trimmed = value.trim();
           return trimmed.length > 0 ? trimmed : undefined;
         };
-        const imageUrls = form.imageUrls.map((item) => item.url).filter((url) => url.trim().length > 0);
+        const imageUrls = form.imageUrls.map((item) => item.url).filter((url) => (url ?? '').trim().length > 0);
+        const storeName = (form.storeName ?? '').trim();
+        const branchName = (form.branchName ?? '').trim();
+        const prefecture = (form.prefecture ?? '').trim();
 
         const payload: Record<string, unknown> = {
           storeId: form.storeId,
-          storeName: form.storeName.trim(),
-          branchName: form.branchName.trim(),
-          prefecture: form.prefecture.trim(),
+          storeName,
+          branchName,
+          prefecture,
           industry: form.category, // バックエンドのキーに合わせる
           workType: form.workType,
           visitedPeriod: form.visitedAt, // バックエンドのキーに合わせる
@@ -599,16 +604,16 @@ export function AdminSurveyEditor({ initialSurvey, mode = 'edit' }: AdminSurveyE
         setSurvey(updated);
         setForm({
           storeId: updated.storeId ?? '',
-          storeName: updated.storeName,
+          storeName: updated.storeName ?? '',
           branchName: updated.branchName ?? '',
-          prefecture: updated.prefecture,
-          category: canonicalCategoryValue(updated.category || updated.industry),
+          prefecture: updated.prefecture ?? '',
+          category: canonicalCategoryValue(updated.category || updated.industry) ?? '',
           workType: updated.workType ?? WORK_TYPE_OPTIONS[0].value,
           visitedAt: updated.visitedAt || updated.visitedPeriod || '',
-          age: String(updated.age),
-          specScore: String(updated.specScore),
-          waitTimeHours: String(updated.waitTimeHours),
-          averageEarning: String(updated.averageEarning),
+          age: String(updated.age ?? ''),
+          specScore: String(updated.specScore ?? ''),
+          waitTimeHours: String(updated.waitTimeHours ?? ''),
+          averageEarning: String(updated.averageEarning ?? ''),
           customerComment: updated.customerComment ?? '',
           staffComment: updated.staffComment ?? '',
           workEnvironmentComment: updated.workEnvironmentComment ?? '',
@@ -618,7 +623,7 @@ export function AdminSurveyEditor({ initialSurvey, mode = 'edit' }: AdminSurveyE
             name: `画像${index + 1}`,
             size: 0,
           })),
-          rating: updated.rating.toString(),
+          rating: (updated.rating ?? '').toString(),
         });
         if (isCreateMode) {
           setMessage('アンケートを登録しました。');
