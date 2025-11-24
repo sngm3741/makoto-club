@@ -614,6 +614,7 @@ func sendSurveyToMessenger(ctx context.Context, payload surveyRequest) {
 		log.Printf("failed to marshal messenger request: %v", err)
 		return
 	}
+	log.Printf("messenger request payload=%s", string(buf))
 
 	url := messengerGatewayURL
 	if !strings.HasSuffix(url, "/send") {

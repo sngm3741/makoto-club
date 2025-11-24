@@ -278,7 +278,7 @@ export const SurveyForm = () => {
   return (
     <section className="space-y-6 rounded-3xl border border-slate-100 bg-white p-6 shadow-lg">
       <header className="space-y-3">
-        <SectionPillTitle label="アンケートを投稿する" />
+        <SectionPillTitle label="アンケート投稿" />
         <div className="space-y-2 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-xs text-slate-600">
           <p className="flex items-center gap-2 text-sm font-semibold text-slate-700">
             <span className="inline-flex h-6 w-6 items-center justify-center  font-semibold text-white">✅</span>
