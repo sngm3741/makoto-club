@@ -1,5 +1,6 @@
 "use server";
 import { API_BASE_URL } from '@/lib/api-base';
+import { REVALIDATE_24H } from '@/lib/revalidate';
 import type { StoreDetail, StoreSummary, SurveySummary } from '@/types/survey';
 
 type StoreSearchParams = {
@@ -47,7 +48,7 @@ const pickLatestDate = (a?: string, b?: string) => {
 export async function fetchStoreSurveys(storeId: string): Promise<SurveySummary[]> {
   const url = new URL(`/api/stores/${storeId}/surveys`, API_BASE_URL);
   url.searchParams.set('limit', String(SURVEY_FETCH_LIMIT));
-  const response = await fetch(url, { cache: 'no-store' });
+  const response = await fetch(url, { next: { revalidate: REVALIDATE_24H } });
   if (!response.ok) {
     return [];
   }
@@ -107,7 +108,7 @@ export async function fetchStores(params: StoreSearchParams) {
   if (params.sort) url.searchParams.set('sort', params.sort);
 
   const response = await fetch(url, {
-    cache: 'no-store',
+    next: { revalidate: REVALIDATE_24H },
   });
 
   if (!response.ok) {
@@ -178,7 +179,7 @@ export async function fetchStoreDetail(storeId: string): Promise<StoreDetail> {
   }
 
   const storeResponse = await fetch(`${API_BASE_URL}/api/stores/${storeId}`, {
-    cache: 'no-store',
+    next: { revalidate: REVALIDATE_24H },
   });
   if (!storeResponse.ok) {
     throw new Error('店舗情報の取得に失敗しました');

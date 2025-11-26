@@ -1,10 +1,7 @@
 "use server";
 import { API_BASE_URL } from '@/lib/api-base';
-import type {
-  SurveyDetail,
-  SurveyListResponse,
-  SurveySummary,
-} from '@/types/survey';
+import { REVALIDATE_24H } from '@/lib/revalidate';
+import type { SurveyDetail, SurveyListResponse, SurveySummary } from '@/types/survey';
 
 type SurveySearchParams = {
   prefecture?: string;
@@ -42,9 +39,7 @@ export async function fetchSurveys(
   url.searchParams.set('page', String(page));
   url.searchParams.set('limit', String(limit));
 
-  const response = await fetch(url, {
-    cache: 'no-store',
-  });
+  const response = await fetch(url, { next: { revalidate: REVALIDATE_24H } });
 
   if (!response.ok) {
     throw new Error('アンケートの取得に失敗しました');
@@ -60,7 +55,7 @@ export async function fetchSurveyById(id: string): Promise<SurveyDetail | null> 
   }
 
   const response = await fetch(`${API_BASE_URL}/api/surveys/${id}`, {
-    cache: 'no-store',
+    next: { revalidate: REVALIDATE_24H },
   });
 
   if (!response.ok) {
