@@ -1,4 +1,4 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import { Geist, Geist_Mono } from 'next/font/google';
 
 import { Header } from '@/components/layout/header';
@@ -35,6 +35,13 @@ export const metadata: Metadata = {
       '働く女の子のためのアンケート検索サービス。実際の調査データから安心して働ける店舗を探せます。',
     type: 'website',
   },
+};
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: 'no',
 };
 
 export default function RootLayout({
