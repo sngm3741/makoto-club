@@ -1,1 +1,1 @@
-export const REVALIDATE_24H = 60 * 60 * 24; // 24時間
+export const REVALIDATE_24H = 0; // 作業中はリアルタイム反映（SSR相当）
