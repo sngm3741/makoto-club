@@ -62,11 +62,12 @@ export function StoreDetailContent({ store }: StoreDetailProps) {
                   </Link>
                 </span>
               ) : null}
-              {store.unitPrice !== undefined && store.unitPrice !== null ? (
+               {/* {store.unitPrice ? (
                 <span className="text-slate-600">
-                  / 単価(60分): <span className="font-semibold text-pink-600">{store.unitPrice.toLocaleString()}円</span>
+                  / 単価(60分): <span className="font-semibold text-pink-600">{store.unitPrice}</span>
                 </span>
-              ) : null}
+              ) : null} */}
+            
             </p>
             {store.businessHours ? (
               <p className="text-xs text-slate-500">
@@ -119,7 +120,7 @@ const collectGalleryImages = (store: StoreDetail) => {
   const result: Array<{ url: string; surveyId?: string; snippet?: string }> = [];
 
   const pickSnippet = (survey: SurveySummary) => {
-    const candidates = [survey.customerComment, survey.staffComment, survey.workEnvironmentComment];
+    const candidates = [survey.customerComment, survey.staffComment, survey.workEnvironmentComment, survey.etcComment];
     const text = candidates.find((v) => v && v.trim().length > 0)?.trim();
     if (!text) return undefined;
     return text.length > 100 ? `${text.slice(0, 100)}...` : text;

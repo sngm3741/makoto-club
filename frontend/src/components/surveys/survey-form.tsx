@@ -29,9 +29,11 @@ type FormValues = {
   specScore?: number;
   waitTimeHours: string;
   averageEarning: string;
+  castBack: string;
   customerComment: string;
   staffComment: string;
   workEnvironmentComment: string;
+  etcComment: string;
   emailAddress: string;
   rating?: number;
 };
@@ -47,9 +49,11 @@ const DEFAULT_FORM_VALUES: FormValues = {
   specScore: undefined,
   waitTimeHours: '',
   averageEarning: '',
+  castBack: '',
   customerComment: '',
   staffComment: '',
   workEnvironmentComment: '',
+  etcComment: '',
   emailAddress: '',
   rating: undefined,
 };
@@ -225,9 +229,11 @@ export const SurveyForm = () => {
         specScore: values.specScore ?? SPEC_MIN,
         waitTimeHours: Number(values.waitTimeHours),
         averageEarning: Number(values.averageEarning),
+        castBack: values.castBack.trim() || undefined,
         customerComment: values.customerComment.trim() || undefined,
         staffComment: values.staffComment.trim() || undefined,
         workEnvironmentComment: values.workEnvironmentComment.trim() || undefined,
+        etcComment: values.etcComment.trim() || undefined,
         emailAddress: values.emailAddress.trim() || undefined,
         imageUrls: images.map((item) => item.url),
         rating: values.rating ?? RATING_MIN,
@@ -439,6 +445,15 @@ export const SurveyForm = () => {
               ))}
             </select>
           </Field>
+          <Field label="キャストバック (60分単価)" error={errors.castBack?.message}>
+            <input
+              id="castBack"
+              type="text"
+              placeholder="例: 10000 / 1万円 / 応相談"
+              {...register('castBack')}
+              className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-pink-400 focus:ring-2 focus:ring-pink-100 focus:outline-none"
+            />
+          </Field>
         </div>
 
         <Field label="客層の印象" error={errors.customerComment?.message}>
@@ -458,18 +473,28 @@ export const SurveyForm = () => {
             placeholder="講習やサポート、送迎などスタッフの対応について"
             {...register('staffComment')}
             className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-pink-400 focus:ring-2 focus:ring-pink-100 focus:outline-none"
-          />
-        </Field>
+        />
+      </Field>
 
-        <Field label="職場環境" error={errors.workEnvironmentComment?.message}>
-          <textarea
-            id="workEnvironmentComment"
-            rows={4}
-            placeholder="待機室・備品・寮など働く環境について"
-            {...register('workEnvironmentComment')}
-            className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-pink-400 focus:ring-2 focus:ring-pink-100 focus:outline-none"
-          />
-        </Field>
+      <Field label="職場環境" error={errors.workEnvironmentComment?.message}>
+        <textarea
+          id="workEnvironmentComment"
+          rows={4}
+          placeholder="待機室・備品・寮など働く環境について"
+          {...register('workEnvironmentComment')}
+          className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-pink-400 focus:ring-2 focus:ring-pink-100 focus:outline-none"
+        />
+      </Field>
+
+      <Field label="その他" error={errors.etcComment?.message}>
+        <textarea
+          id="etcComment"
+          rows={4}
+          placeholder="その他共有したいことがあればご自由にお書きください"
+          {...register('etcComment')}
+          className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-pink-400 focus:ring-2 focus:ring-pink-100 focus:outline-none"
+        />
+      </Field>
 
         <Field label="連絡先メールアドレス (任意)" error={errors.emailAddress?.message}>
           <input

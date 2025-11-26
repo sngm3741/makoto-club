@@ -82,7 +82,8 @@ export const SurveyDetailContent = ({ survey }: SurveyDetailProps) => {
         {renderCommentSection('客層', survey.customerComment)}
         {renderCommentSection('スタッフ対応', survey.staffComment)}
         {renderCommentSection('待機環境・職場の雰囲気', survey.workEnvironmentComment)}
-        {!survey.customerComment && !survey.staffComment && !survey.workEnvironmentComment && (
+        {renderCommentSection('その他', survey.etcComment)}
+        {!survey.customerComment && !survey.staffComment && !survey.workEnvironmentComment && !survey.etcComment && (
           <p className="text-sm text-slate-500">
             詳細な本文はこれから順次掲載します。更新をお待ちください。
           </p>
@@ -117,7 +118,7 @@ const renderCommentSection = (title: string, body?: string) => {
 };
 
 const pickSnippetFromSurvey = (survey: SurveyDetail) => {
-  const candidates = [survey.customerComment, survey.staffComment, survey.workEnvironmentComment];
+  const candidates = [survey.customerComment, survey.staffComment, survey.workEnvironmentComment, survey.etcComment];
   const text = candidates.find((v) => v && v.trim().length > 0)?.trim();
   if (!text) return undefined;
   return text.length > 100 ? `${text.slice(0, 100)}...` : text;

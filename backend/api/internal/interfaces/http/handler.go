@@ -589,12 +589,14 @@ func sendSurveyToMessenger(ctx context.Context, payload surveyRequest) {
 		fmt.Sprintf("スペック評価: %d", payload.SpecScore),
 		fmt.Sprintf("待機時間(時間): %d", payload.WaitTimeHours),
 		fmt.Sprintf("平均稼ぎ: %d", payload.AverageEarning),
+		fmt.Sprintf("キャストバック: %s", trimOrEmpty(payload.CastBack)),
 		fmt.Sprintf("総合評価: %.1f", payload.Rating),
 	}
 
 	lines = append(lines, fmt.Sprintf("客層について: %s", trimOrEmpty(payload.CustomerComment)))
 	lines = append(lines, fmt.Sprintf("スタッフについて: %s", trimOrEmpty(payload.StaffComment)))
 	lines = append(lines, fmt.Sprintf("職場の環境について: %s", trimOrEmpty(payload.WorkEnvironmentComment)))
+	lines = append(lines, fmt.Sprintf("その他: %s", trimOrEmpty(payload.EtcComment)))
 	if payload.EmailAddress != nil {
 		lines = append(lines, fmt.Sprintf("連絡先: %s", strings.TrimSpace(*payload.EmailAddress)))
 	}
@@ -782,7 +784,7 @@ type storeRequest struct {
 	Area          *string               `json:"area"`
 	Industry      string                `json:"industry"`
 	Genre         *string               `json:"genre"`
-	UnitPrice     *int                  `json:"unitPrice"`
+	UnitPrice     *string               `json:"unitPrice"`
 	BusinessHours *businessHoursPayload `json:"businessHours"`
 }
 
@@ -799,7 +801,7 @@ type storeResponse struct {
 	Area          *string               `json:"area,omitempty"`
 	Industry      string                `json:"industry"`
 	Genre         *string               `json:"genre,omitempty"`
-	UnitPrice     *int                  `json:"unitPrice,omitempty"`
+	UnitPrice     *string               `json:"unitPrice,omitempty"`
 	BusinessHours *businessHoursPayload `json:"businessHours,omitempty"`
 	AverageRating float64               `json:"averageRating"`
 	CreatedAt     time.Time             `json:"createdAt"`
@@ -830,6 +832,8 @@ type surveyRequest struct {
 	CustomerComment        *string  `json:"customerComment"`
 	StaffComment           *string  `json:"staffComment"`
 	WorkEnvironmentComment *string  `json:"workEnvironmentComment"`
+	EtcComment             *string  `json:"etcComment"`
+	CastBack               *string  `json:"castBack"`
 	EmailAddress           *string  `json:"emailAddress"`
 	ImageURLs              []string `json:"imageUrls"`
 }
@@ -853,6 +857,8 @@ type surveyResponse struct {
 	CustomerComment        *string    `json:"customerComment,omitempty"`
 	StaffComment           *string    `json:"staffComment,omitempty"`
 	WorkEnvironmentComment *string    `json:"workEnvironmentComment,omitempty"`
+	EtcComment             *string    `json:"etcComment,omitempty"`
+	CastBack               *string    `json:"castBack,omitempty"`
 	EmailAddress           *string    `json:"emailAddress,omitempty"`
 	ImageURLs              []string   `json:"imageUrls,omitempty"`
 	CreatedAt              time.Time  `json:"createdAt"`
@@ -978,6 +984,20 @@ func (h *handler) buildSurveyEntity(ctx context.Context, id survey_vo.ID, payloa
 		}
 		opts = append(opts, survey_domain.WithWorkEnvironmentComment(comment))
 	}
+	if payload.EtcComment != nil {
+		comment, err := survey_vo.NewEtcComment(*payload.EtcComment)
+		if err != nil {
+			return nil, err
+		}
+		opts = append(opts, survey_domain.WithEtcComment(comment))
+	}
+	if payload.CastBack != nil {
+		cb, err := survey_vo.NewCastBack(*payload.CastBack)
+		if err != nil {
+			return nil, err
+		}
+		opts = append(opts, survey_domain.WithCastBack(cb))
+	}
 	if payload.EmailAddress != nil {
 		email, err := survey_vo.NewEmailAddress(*payload.EmailAddress)
 		if err != nil {
@@ -1051,6 +1071,14 @@ func newSurveyResponse(entity *survey_domain.Survey) surveyResponse {
 	if comment := entity.WorkEnvironmentComment(); comment != nil {
 		value := comment.Value()
 		resp.WorkEnvironmentComment = &value
+	}
+	if comment := entity.EtcComment(); comment != nil {
+		value := comment.Value()
+		resp.EtcComment = &value
+	}
+	if cb := entity.CastBack(); cb != nil {
+		value := cb.Value()
+		resp.CastBack = &value
 	}
 	if email := entity.EmailAddress(); !email.IsZero() {
 		value := email.Value()

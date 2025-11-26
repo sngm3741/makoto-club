@@ -20,6 +20,8 @@ export interface SurveySummary {
   customerComment?: string;
   staffComment?: string;
   workEnvironmentComment?: string;
+  castBack?: string;
+  etcComment?: string;
   emailAddress?: string;
   imageUrls?: string[];
 }
@@ -48,7 +50,7 @@ export interface StoreSummary {
   averageEarningLabel?: string;
   waitTimeHours: number;
   waitTimeLabel?: string;
-  unitPrice?: number | null;
+  unitPrice?: string | null;
   surveyCount: number;
   helpfulCount?: number;
   reviewCount?: number; // 旧API互換

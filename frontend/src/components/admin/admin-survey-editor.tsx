@@ -35,9 +35,11 @@ type AdminSurvey = {
   specScore: number;
   waitTimeHours: number;
   averageEarning: number;
+  castBack?: string;
   customerComment?: string;
   staffComment?: string;
   workEnvironmentComment?: string;
+  etcComment?: string;
   emailAddress?: string;
   imageUrls?: string[];
   status: string;
@@ -69,7 +71,10 @@ const WORK_TYPE_OPTIONS = [
   { value: '在籍', label: '在籍' },
   { value: '出稼ぎ', label: '出稼ぎ' },
 ];
-
+const RATING_MIN = 0;
+const RATING_MAX = 5;
+const RATING_STEP = 0.1;
+const SPEC_OPTIONS = Array.from({ length: SPEC_MAX - SPEC_MIN + 1 }, (_, i) => SPEC_MIN + i);
 const MAX_IMAGES = 5;
 const MAX_IMAGE_SIZE_MB = 3;
 const MAX_IMAGE_SIZE_BYTES = MAX_IMAGE_SIZE_MB * 1024 * 1024;
@@ -89,9 +94,11 @@ type SurveyFormState = {
   specScore: string;
   waitTimeHours: string;
   averageEarning: string;
+  castBack: string;
   customerComment: string;
   staffComment: string;
   workEnvironmentComment: string;
+  etcComment: string;
   emailAddress: string;
   imageUrls: ImageItem[];
   rating: string;
@@ -125,10 +132,6 @@ function formatDate(value?: string) {
   if (Number.isNaN(date.getTime())) return value;
   return date.toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' });
 }
-
-const RATING_MIN = 0;
-const RATING_MAX = 5;
-const RATING_STEP = 0.1;
 
 const formatSpecScoreLabel = (value: number) => {
   if (value <= SPEC_MIN) return SPEC_MIN_LABEL;
@@ -185,27 +188,30 @@ export function AdminSurveyEditor({ initialSurvey, mode = 'edit' }: AdminSurveyE
     branchName: initialSurvey.branchName ?? '',
     prefecture: initialSurvey.prefecture ?? '',
     category: canonicalCategoryValue(initialSurvey.category || initialSurvey.industry) ?? '',
-    workType: initialSurvey.workType ?? WORK_TYPE_OPTIONS[0].value,
+    workType: initialSurvey.workType ?? '',
     visitedAt: initialSurvey.visitedAt || initialSurvey.visitedPeriod || '',
-    age: String(initialSurvey.age ?? ''),
-    specScore: String(initialSurvey.specScore ?? ''),
-    waitTimeHours: String(initialSurvey.waitTimeHours ?? ''),
-    averageEarning: String(initialSurvey.averageEarning ?? ''),
+    age: initialSurvey.age ? String(initialSurvey.age) : '',
+    specScore: initialSurvey.specScore ? String(initialSurvey.specScore) : '',
+    waitTimeHours: initialSurvey.waitTimeHours ? String(initialSurvey.waitTimeHours) : '',
+    averageEarning: initialSurvey.averageEarning ? String(initialSurvey.averageEarning) : '',
+    castBack: initialSurvey.castBack ?? '',
     customerComment: initialSurvey.customerComment ?? '',
     staffComment: initialSurvey.staffComment ?? '',
     workEnvironmentComment: initialSurvey.workEnvironmentComment ?? '',
+    etcComment: initialSurvey.etcComment ?? '',
     emailAddress: initialSurvey.emailAddress ?? '',
     imageUrls: (initialSurvey.imageUrls ?? []).map((url, index) => ({
       url,
       name: `画像${index + 1}`,
       size: 0,
     })),
-    rating: (initialSurvey.rating ?? '').toString(),
+    rating: initialSurvey.rating ? initialSurvey.rating.toString() : '',
   });
   const [savingContent, setSavingContent] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [successLink, setSuccessLink] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [ratingError, setRatingError] = useState<string | null>(null);
   const [imageError, setImageError] = useState<string | null>(null);
   const [uploadingImage, setUploadingImage] = useState(false);
   const [storeCandidates, setStoreCandidates] = useState<StoreCandidate[]>([]);
@@ -216,6 +222,7 @@ export function AdminSurveyEditor({ initialSurvey, mode = 'edit' }: AdminSurveyE
   const [filterCategory, setFilterCategory] = useState(
     canonicalCategoryValue(initialSurvey.category || initialSurvey.industry),
   );
+  const [showCreatedModal, setShowCreatedModal] = useState(false);
 
   const selectedCategoryLabel = useMemo(() => categoryLabelFromValue(form.category), [form.category]);
 
@@ -224,6 +231,7 @@ export function AdminSurveyEditor({ initialSurvey, mode = 'edit' }: AdminSurveyE
   // 店舗に必ず紐づく前提なので全モードでロック
   const lockStoreFields = true;
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const ratingInputRef = useRef<HTMLInputElement | null>(null);
   const canAddMoreImages = form.imageUrls.length < MAX_IMAGES && !uploadingImage;
 
   const contentBaseline = useMemo(
@@ -233,18 +241,20 @@ export function AdminSurveyEditor({ initialSurvey, mode = 'edit' }: AdminSurveyE
       branchName: survey.branchName ?? '',
       prefecture: survey.prefecture,
       category: survey.category,
-      workType: survey.workType ?? WORK_TYPE_OPTIONS[0].value,
+      workType: survey.workType ?? '',
       visitedAt: survey.visitedAt,
-      age: String(survey.age),
-      specScore: String(survey.specScore),
-      waitTimeHours: String(survey.waitTimeHours),
-      averageEarning: String(survey.averageEarning),
+      age: survey.age ? String(survey.age) : '',
+      specScore: survey.specScore ? String(survey.specScore) : '',
+      waitTimeHours: survey.waitTimeHours ? String(survey.waitTimeHours) : '',
+      averageEarning: survey.averageEarning ? String(survey.averageEarning) : '',
+      castBack: survey.castBack ?? '',
       customerComment: survey.customerComment ?? '',
       staffComment: survey.staffComment ?? '',
       workEnvironmentComment: survey.workEnvironmentComment ?? '',
+      etcComment: survey.etcComment ?? '',
       emailAddress: survey.emailAddress ?? '',
       imageUrls: survey.imageUrls ?? [],
-      rating: survey.rating.toString(),
+      rating: survey.rating ? survey.rating.toString() : '',
     }),
     [survey],
   );
@@ -324,6 +334,7 @@ export function AdminSurveyEditor({ initialSurvey, mode = 'edit' }: AdminSurveyE
     (event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
       const { name, value } = event.target;
       if (name === 'rating') {
+        setRatingError(null);
         const numeric = Number(value);
         const clamped = Math.min(RATING_MAX, Math.max(RATING_MIN, numeric));
         const rounded = (Math.round(clamped * 10) / 10).toFixed(1);
@@ -512,21 +523,53 @@ export function AdminSurveyEditor({ initialSurvey, mode = 'edit' }: AdminSurveyE
         const branchName = (form.branchName ?? '').trim();
         const prefecture = (form.prefecture ?? '').trim();
 
-        const payload: Record<string, unknown> = {
-          storeId: form.storeId,
-          storeName,
-          branchName,
-          prefecture,
-          industry: form.category, // バックエンドのキーに合わせる
+      if (!form.workType) {
+        setError('勤務形態を選択してください。');
+        return;
+      }
+      if (!form.age) {
+        setError('年齢を選択してください。');
+        return;
+      }
+      if (!form.specScore) {
+        setError('スペックを選択してください。');
+        return;
+      }
+      if (!form.waitTimeHours) {
+        setError('待機時間を選択してください。');
+        return;
+      }
+      if (!form.averageEarning) {
+        setError('平均稼ぎを選択してください。');
+        return;
+      }
+      if (form.rating === '') {
+        setRatingError('満足度を選択してください。');
+        setError('満足度を選択してください。');
+        if (ratingInputRef.current) {
+          ratingInputRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          ratingInputRef.current.focus({ preventScroll: true });
+        }
+        return;
+      }
+
+      const payload: Record<string, unknown> = {
+        storeId: form.storeId,
+        storeName,
+        branchName,
+        prefecture,
+        industry: form.category, // バックエンドのキーに合わせる
           workType: form.workType,
           visitedPeriod: form.visitedAt, // バックエンドのキーに合わせる
           age: Number(form.age),
           specScore: Number(form.specScore),
           waitTimeHours: Number(form.waitTimeHours),
           averageEarning: Number(form.averageEarning),
+          castBack: normalizeOptional(form.castBack) ?? null,
           customerComment: normalizeOptional(form.customerComment) ?? null,
           staffComment: normalizeOptional(form.staffComment) ?? null,
           workEnvironmentComment: normalizeOptional(form.workEnvironmentComment) ?? null,
+          etcComment: normalizeOptional(form.etcComment) ?? null,
           emailAddress: normalizeOptional(form.emailAddress),
           imageUrls,
           rating: Number(form.rating),
@@ -562,29 +605,33 @@ export function AdminSurveyEditor({ initialSurvey, mode = 'edit' }: AdminSurveyE
           branchName: updated.branchName ?? '',
           prefecture: updated.prefecture ?? '',
           category: canonicalCategoryValue(updated.category || updated.industry) ?? '',
-          workType: updated.workType ?? WORK_TYPE_OPTIONS[0].value,
-          visitedAt: updated.visitedAt || updated.visitedPeriod || '',
-          age: String(updated.age ?? ''),
-          specScore: String(updated.specScore ?? ''),
-          waitTimeHours: String(updated.waitTimeHours ?? ''),
-          averageEarning: String(updated.averageEarning ?? ''),
-          customerComment: updated.customerComment ?? '',
-          staffComment: updated.staffComment ?? '',
-          workEnvironmentComment: updated.workEnvironmentComment ?? '',
-          emailAddress: updated.emailAddress ?? '',
+      workType: updated.workType ?? WORK_TYPE_OPTIONS[0].value,
+      visitedAt: updated.visitedAt || updated.visitedPeriod || '',
+      age: updated.age ? String(updated.age) : '',
+      specScore: updated.specScore ? String(updated.specScore) : '',
+      waitTimeHours: updated.waitTimeHours ? String(updated.waitTimeHours) : '',
+      averageEarning: updated.averageEarning ? String(updated.averageEarning) : '',
+      castBack: updated.castBack ?? '',
+      customerComment: updated.customerComment ?? '',
+      staffComment: updated.staffComment ?? '',
+      workEnvironmentComment: updated.workEnvironmentComment ?? '',
+      etcComment: updated.etcComment ?? '',
+      emailAddress: updated.emailAddress ?? '',
           imageUrls: (updated.imageUrls ?? []).map((url, index) => ({
             url,
             name: `画像${index + 1}`,
             size: 0,
           })),
-          rating: (updated.rating ?? '').toString(),
+          rating: updated.rating ? updated.rating.toString() : '',
         });
         if (isCreateMode) {
           setMessage('アンケートを登録しました。');
           setSuccessLink(`/surveys/${updated.id}`);
+          setShowCreatedModal(true);
         } else {
           setMessage('アンケート内容を更新しました');
           setSuccessLink(null);
+          setShowCreatedModal(false);
         }
       } catch (err) {
         setError(err instanceof Error ? err.message : '内容の更新に失敗しました');
@@ -600,6 +647,32 @@ export function AdminSurveyEditor({ initialSurvey, mode = 'edit' }: AdminSurveyE
       <h1 className="text-2xl font-semibold text-slate-900">
         {isCreateMode ? 'アンケート作成' : 'アンケート編集'}
       </h1>
+
+      {showCreatedModal ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 px-4">
+          <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl">
+            <h2 className="text-lg font-semibold text-slate-900">アンケートを登録しました</h2>
+            <p className="mt-2 text-sm text-slate-600">公開ページで内容を確認できます。</p>
+            <div className="mt-4 flex gap-2">
+              {successLink ? (
+                <Link
+                  href={successLink}
+                  className="flex-1 rounded-full bg-pink-600 px-4 py-2 text-center text-sm font-semibold text-white shadow hover:bg-pink-500"
+                >
+                  アンケートページを見る
+                </Link>
+              ) : null}
+              <button
+                type="button"
+                onClick={() => setShowCreatedModal(false)}
+                className="rounded-full border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+              >
+                閉じる
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       {message ? (
         <p className="rounded-lg bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
@@ -843,6 +916,7 @@ export function AdminSurveyEditor({ initialSurvey, mode = 'edit' }: AdminSurveyE
                 className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-pink-400 focus:outline-none"
                 required
               >
+                <option value="">選択してください</option>
                 {WORK_TYPE_OPTIONS.map((option) => (
                   <option key={option.value} value={option.value}>
                     {option.label}
@@ -859,6 +933,7 @@ export function AdminSurveyEditor({ initialSurvey, mode = 'edit' }: AdminSurveyE
                 className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-pink-400 focus:outline-none"
                 required
               >
+                <option value="">選択してください</option>
                 {AGE_OPTIONS.map((option) => (
                   <option key={option.value} value={option.value}>
                     {option.label}
@@ -866,25 +941,22 @@ export function AdminSurveyEditor({ initialSurvey, mode = 'edit' }: AdminSurveyE
                 ))}
               </select>
             </label>
-            <label className="space-y-2 text-sm sm:col-span-2">
+            <label className="space-y-1 text-sm sm:col-span-2">
               <span className="font-semibold text-slate-700">スペック</span>
-              <input
-                type="range"
+              <select
                 name="specScore"
-                value={Number(form.specScore) || SPEC_MIN}
+                value={form.specScore}
                 onChange={handleContentChange}
-                min={SPEC_MIN}
-                max={SPEC_MAX}
-                step={1}
-                className="w-full accent-pink-500"
-              />
-              <div className="flex items-center justify-between text-xs text-slate-500">
-                <span>{SPEC_MIN_LABEL}</span>
-                <span className="text-sm font-semibold text-slate-700">
-                  {formatSpecScoreLabel(Number(form.specScore) || SPEC_MIN)}
-                </span>
-                <span>{SPEC_MAX_LABEL}</span>
-              </div>
+                className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-pink-400 focus:outline-none"
+                required
+              >
+                <option value="">選択してください</option>
+                {SPEC_OPTIONS.map((value) => (
+                  <option key={value} value={value}>
+                    {formatSpecScoreLabel(value)}
+                  </option>
+                ))}
+              </select>
             </label>
             <label className="space-y-1 text-sm">
               <span className="font-semibold text-slate-700">待機時間</span>
@@ -895,6 +967,7 @@ export function AdminSurveyEditor({ initialSurvey, mode = 'edit' }: AdminSurveyE
                 className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-pink-400 focus:outline-none"
                 required
               >
+                <option value="">選択してください</option>
                 {WAIT_TIME_OPTIONS.map((option) => (
                   <option key={option.value} value={option.value}>
                     {option.label}
@@ -911,12 +984,24 @@ export function AdminSurveyEditor({ initialSurvey, mode = 'edit' }: AdminSurveyE
                 className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-pink-400 focus:outline-none"
                 required
               >
+                <option value="">選択してください</option>
                 {AVERAGE_EARNING_OPTIONS.map((option) => (
                   <option key={option.value} value={option.value}>
                     {option.label}
                   </option>
                 ))}
               </select>
+            </label>
+            <label className="space-y-1 text-sm">
+              <span className="font-semibold text-slate-700">キャストバック (60分単価)</span>
+              <input
+                type="text"
+                name="castBack"
+                value={form.castBack}
+                onChange={handleContentChange}
+                placeholder="例: 10000 / 1万円 / 応相談"
+                className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-pink-400 focus:outline-none"
+              />
             </label>
           </div>
 
@@ -951,6 +1036,17 @@ export function AdminSurveyEditor({ initialSurvey, mode = 'edit' }: AdminSurveyE
                 onChange={handleContentChange}
                 rows={3}
                 placeholder="待機室・備品・寮など働く環境について"
+                className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-pink-400 focus:outline-none"
+              />
+            </label>
+            <label className="space-y-1 text-sm">
+              <span className="font-semibold text-slate-700">その他</span>
+              <textarea
+                name="etcComment"
+                value={form.etcComment}
+                onChange={handleContentChange}
+                rows={3}
+                placeholder="その他共有したいことがあれば入力してください"
                 className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-pink-400 focus:outline-none"
               />
             </label>
@@ -1031,26 +1127,28 @@ export function AdminSurveyEditor({ initialSurvey, mode = 'edit' }: AdminSurveyE
           <label className="space-y-2 text-sm">
             <span className="font-semibold text-slate-700">満足度</span>
             <div className="flex items-center gap-3">
-              <StarDisplay value={Number(form.rating) || 0} />
+              <StarDisplay value={form.rating === '' ? 0 : Number(form.rating)} />
               <span className="text-xs text-slate-500">
-                {(Number(form.rating) || 0).toFixed(1)} / {RATING_MAX.toFixed(1)}
+                {form.rating === '' ? '未選択' : Number(form.rating).toFixed(1)} / {RATING_MAX.toFixed(1)}
               </span>
             </div>
             <input
               type="range"
               name="rating"
-              value={Number(form.rating) || 0}
+              value={form.rating === '' ? RATING_MIN : Number(form.rating)}
               onChange={handleContentChange}
               min={RATING_MIN}
               max={RATING_MAX}
               step={RATING_STEP}
               className="w-full accent-pink-500"
+              ref={ratingInputRef}
             />
             <div className="flex justify-between text-xs text-slate-500">
               <span>0</span>
               <span>2.5</span>
               <span>5.0</span>
             </div>
+            {ratingError ? <p className="text-xs text-red-600">{ratingError}</p> : null}
           </label>
 
           <div className="flex justify-end">

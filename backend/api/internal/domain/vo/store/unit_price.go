@@ -1,39 +1,29 @@
 package store
 
-import "errors"
+import "strings"
 
 // UnitPrice は「女子給(60分単価)」を表す。
-// 整数の円単価で、常識的な範囲を必須チェックする。
+// バリデーションは行わず、文字列をそのまま保持する。
 type UnitPrice struct {
-	value int
+	value string
 }
 
-var (
-	// 0 は無効。最低1,000円、上限は1,000,000円を目安に制限。
-	ErrInvalidUnitPrice = errors.New("女子給(60分単価)は1,000〜100,000の範囲で入力してください")
-	minUnitPrice        = 1000
-	maxUnitPrice        = 100_000
-)
-
-// NewUnitPrice は単価を検証して値オブジェクトを生成する。
-func NewUnitPrice(v int) (UnitPrice, error) {
-	if v < minUnitPrice || v > maxUnitPrice {
-		return UnitPrice{}, ErrInvalidUnitPrice
-	}
+// NewUnitPrice は単価をそのまま値オブジェクトに格納する。
+func NewUnitPrice(v string) (UnitPrice, error) {
 	return UnitPrice{value: v}, nil
 }
 
 // Value は内部値を返す。
-func (p UnitPrice) Value() int {
+func (p UnitPrice) Value() string {
 	return p.value
 }
 
-// Validate は値が範囲内か判定する。
+// Validate は常に true を返す（バリデーションなし）。
 func (p UnitPrice) Validate() bool {
-	return p.value >= minUnitPrice && p.value <= maxUnitPrice
+	return true
 }
 
 // IsZero は未設定かどうか判定する。
 func (p UnitPrice) IsZero() bool {
-	return p.value == 0
+	return strings.TrimSpace(p.value) == ""
 }

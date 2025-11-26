@@ -19,7 +19,7 @@ type StoreRequestPayload = {
   area?: string | null;
   industry: string;
   genre?: string | null;
-  unitPrice?: number | null;
+  unitPrice?: string | null;
   businessHours?: {
     open: string;
     close: string;
@@ -49,7 +49,7 @@ export function AdminStoreEditor({ initialStore }: AdminStoreEditorProps) {
     area: initialStore?.area ?? '',
     industry: initialStore?.industry ?? '',
     genre: initialStore?.genre ?? '',
-    unitPrice: initialStore?.unitPrice?.toString() ?? '',
+    unitPrice: initialStore?.unitPrice ?? '',
     open: initialStore?.businessHours?.open ?? '',
     close: initialStore?.businessHours?.close ?? '',
   });
@@ -69,10 +69,7 @@ export function AdminStoreEditor({ initialStore }: AdminStoreEditorProps) {
       area: currentBaseline.area ?? '',
       industry: currentBaseline.industry ?? '',
       genre: currentBaseline.genre ?? '',
-      unitPrice:
-        currentBaseline.unitPrice !== undefined && currentBaseline.unitPrice !== null
-          ? String(currentBaseline.unitPrice)
-          : '',
+      unitPrice: currentBaseline.unitPrice ?? '',
       open: currentBaseline.businessHours?.open ?? '',
       close: currentBaseline.businessHours?.close ?? '',
     };
@@ -122,21 +119,8 @@ export function AdminStoreEditor({ initialStore }: AdminStoreEditorProps) {
       industry: form.industry,
       genre: form.genre.trim() ? form.genre.trim() : null,
     };
-    if (form.unitPrice) {
-      const parsed = Number(form.unitPrice);
-      if (!Number.isFinite(parsed)) {
-        setError('女子給(60分単価)は数値で入力してください。');
-        return null;
-      }
-      if (parsed < 1000 || parsed > 100000) {
-        setError('女子給(60分単価)は1,000〜100,000の範囲で入力してください。');
-        return null;
-      }
-      if (parsed % 1000 !== 0) {
-        setError('女子給(60分単価)は1,000円単位で入力してください。');
-        return null;
-      }
-      payload.unitPrice = parsed;
+    if (form.unitPrice.trim()) {
+      payload.unitPrice = form.unitPrice.trim();
     } else {
       payload.unitPrice = null;
     }
@@ -197,8 +181,7 @@ export function AdminStoreEditor({ initialStore }: AdminStoreEditorProps) {
           area: updated.area ?? '',
           industry: updated.industry,
           genre: updated.genre ?? '',
-          unitPrice:
-            updated.unitPrice !== undefined && updated.unitPrice !== null ? String(updated.unitPrice) : '',
+          unitPrice: updated.unitPrice ?? '',
           open: updated.businessHours?.open ?? '',
           close: updated.businessHours?.close ?? '',
         });
@@ -401,23 +384,19 @@ export function AdminStoreEditor({ initialStore }: AdminStoreEditorProps) {
         </div>
         <div className="space-y-1">
           <label className="text-xs font-semibold text-slate-600" htmlFor="unitPrice">
-            女子給 (60分単価・円)
+            キャストバック (60分単価)
           </label>
           <input
             id="unitPrice"
             name="unitPrice"
-            type="number"
-            inputMode="numeric"
-            min={1000}
-            max={100000}
-            step={1000}
-            placeholder="10000"
+            type="text"
+            placeholder="例: 10000 / 1万円 / 応相談"
             value={form.unitPrice}
             onChange={handleInputChange}
             className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-pink-400 focus:outline-none"
           />
           <p className="text-xs text-slate-500">
-            任意 / 1,000〜100,000 の範囲で、1,000円刻みで入力してください。
+            任意 / 文字列で入力された値をそのまま保存します。
           </p>
         </div>
         <div className="md:col-span-2">

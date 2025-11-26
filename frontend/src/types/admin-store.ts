@@ -6,7 +6,7 @@ export type AdminStoreRecord = {
   area?: string;
   industry: string;
   genre?: string;
-  unitPrice?: number | null;
+  unitPrice?: string | null;
   businessHours?: {
     open: string;
     close: string;

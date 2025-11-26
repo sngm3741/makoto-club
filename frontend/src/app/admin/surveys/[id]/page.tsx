@@ -32,6 +32,8 @@ type AdminSurvey = {
   customerComment?: string;
   staffComment?: string;
   workEnvironmentComment?: string;
+  castBack?: string;
+  etcComment?: string;
   emailAddress?: string;
   imageUrls?: string[];
   rewardStatus: string;

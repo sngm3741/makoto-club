@@ -180,6 +180,8 @@ type document struct {
 	CustomerComment        *string            `bson:"customerComment,omitempty"`
 	StaffComment           *string            `bson:"staffComment,omitempty"`
 	WorkEnvironmentComment *string            `bson:"workEnvironmentComment,omitempty"`
+	EtcComment             *string            `bson:"etcComment,omitempty"`
+	CastBack               *string            `bson:"castBack,omitempty"`
 	EmailAddress           *string            `bson:"emailAddress,omitempty"`
 	ImageURLs              []string           `bson:"imageUrls,omitempty"`
 	CreatedAt              time.Time          `bson:"createdAt"`
@@ -237,6 +239,14 @@ func newDocument(entity *survey_domain.Survey) (*document, error) {
 	if v := entity.WorkEnvironmentComment(); v != nil {
 		value := v.Value()
 		doc.WorkEnvironmentComment = &value
+	}
+	if v := entity.EtcComment(); v != nil {
+		value := v.Value()
+		doc.EtcComment = &value
+	}
+	if v := entity.CastBack(); v != nil {
+		value := v.Value()
+		doc.CastBack = &value
 	}
 	if email := entity.EmailAddress(); !email.IsZero() {
 		value := email.Value()
@@ -345,6 +355,20 @@ func (d *document) toEntity() (*survey_domain.Survey, error) {
 			return nil, err
 		}
 		opts = append(opts, survey_domain.WithWorkEnvironmentComment(c))
+	}
+	if d.EtcComment != nil {
+		c, err := survey_vo.NewEtcComment(*d.EtcComment)
+		if err != nil {
+			return nil, err
+		}
+		opts = append(opts, survey_domain.WithEtcComment(c))
+	}
+	if d.CastBack != nil {
+		cb, err := survey_vo.NewCastBack(*d.CastBack)
+		if err != nil {
+			return nil, err
+		}
+		opts = append(opts, survey_domain.WithCastBack(cb))
 	}
 	if d.EmailAddress != nil {
 		email, err := survey_vo.NewEmailAddress(*d.EmailAddress)

@@ -31,6 +31,8 @@ type Survey struct {
 	customerComment        *survey_vo.CustomerComment
 	staffComment           *survey_vo.StaffComment
 	workEnvironmentComment *survey_vo.WorkEnvironmentComment
+	etcComment             *survey_vo.EtcComment
+	castBack               *survey_vo.CastBack
 	emailAddress           survey_vo.EmailAddress
 	imageURLs              survey_vo.ImageURLs
 
@@ -92,6 +94,24 @@ func WithWorkEnvironmentComment(comment survey_vo.WorkEnvironmentComment) Option
 	return func(s *Survey) error {
 		c := comment
 		s.workEnvironmentComment = &c
+		return nil
+	}
+}
+
+// WithEtcComment はその他コメントを設定する。
+func WithEtcComment(comment survey_vo.EtcComment) Option {
+	return func(s *Survey) error {
+		c := comment
+		s.etcComment = &c
+		return nil
+	}
+}
+
+// WithCastBack はキャストバックを設定する。
+func WithCastBack(cb survey_vo.CastBack) Option {
+	return func(s *Survey) error {
+		c := cb
+		s.castBack = &c
 		return nil
 	}
 }
@@ -229,6 +249,12 @@ func (s *Survey) validate() error {
 	if s.workEnvironmentComment != nil && !s.workEnvironmentComment.Validate() {
 		return errors.New("職場環境コメントの入力値が不正です")
 	}
+	if s.etcComment != nil && !s.etcComment.Validate() {
+		return errors.New("その他コメントの入力値が不正です")
+	}
+	if s.castBack != nil && !s.castBack.Validate() {
+		return errors.New("キャストバックの入力値が不正です")
+	}
 	if !s.emailAddress.Validate() {
 		return errors.New("メールアドレスの入力値が不正です")
 	}
@@ -346,6 +372,16 @@ func (s *Survey) StaffComment() *survey_vo.StaffComment {
 // WorkEnvironmentComment は職場環境コメントを返す。
 func (s *Survey) WorkEnvironmentComment() *survey_vo.WorkEnvironmentComment {
 	return s.workEnvironmentComment
+}
+
+// EtcComment はその他コメントを返す。
+func (s *Survey) EtcComment() *survey_vo.EtcComment {
+	return s.etcComment
+}
+
+// CastBack はキャストバックを返す。
+func (s *Survey) CastBack() *survey_vo.CastBack {
+	return s.castBack
 }
 
 // EmailAddress は回答者のメールアドレスを返す。

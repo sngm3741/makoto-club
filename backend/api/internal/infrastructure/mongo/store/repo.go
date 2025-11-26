@@ -225,7 +225,7 @@ type document struct {
 	Area          *string                `bson:"area,omitempty"`
 	Industry      string                 `bson:"industry"`
 	Genre         *string                `bson:"genre,omitempty"`
-	UnitPrice     *int                   `bson:"unitPrice,omitempty"`
+	UnitPrice     *string                `bson:"unitPrice,omitempty"`
 	BusinessHours *businessHoursDocument `bson:"businessHours,omitempty"`
 	AverageRating float64                `bson:"averageRating"`
 	CreatedAt     time.Time              `bson:"createdAt"`

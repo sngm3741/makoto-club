@@ -25,7 +25,7 @@ type ApiStore = {
   area?: string;
   industry: string;
   genre?: string;
-  unitPrice?: number | null;
+  unitPrice?: string | null;
   businessHours?: { open: string; close: string };
   averageRating: number;
   createdAt?: string;

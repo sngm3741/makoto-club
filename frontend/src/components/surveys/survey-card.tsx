@@ -14,7 +14,7 @@ type SurveyCardProps = {
 const DESCRIPTION_MAX_LENGTH = 200;
 
 const pickDescription = (survey: SurveySummary) => {
-  const candidates = [survey.customerComment, survey.staffComment, survey.workEnvironmentComment];
+  const candidates = [survey.customerComment, survey.staffComment, survey.workEnvironmentComment, survey.etcComment];
   const text = candidates.find((value) => value && value.trim().length > 0)?.trim();
   if (!text) return '詳しいアンケートは詳細ページでチェック！';
   if (text.length <= DESCRIPTION_MAX_LENGTH) return text;
