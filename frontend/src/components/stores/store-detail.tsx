@@ -5,6 +5,7 @@ import { MetricCard, StarDisplay } from '@/components/common/metrics';
 import { StoreSurveyList } from './store-survey-list';
 import { formatDateTime } from '@/utils/date';
 import { StorePhotoGallery } from './store-photo-gallery';
+import { BreadcrumbLabelSetter } from '@/components/common/breadcrumb-label-setter';
 
 type StoreDetailProps = {
   store: StoreDetail;
@@ -15,6 +16,7 @@ export function StoreDetailContent({ store }: StoreDetailProps) {
 
   return (
     <div className="space-y-6">
+      <BreadcrumbLabelSetter label={store.storeName} branchName={store.branchName || undefined} />
       <section className="space-y-3">
         <SectionPillTitle label="店舗情報" />
         <SectionCard>

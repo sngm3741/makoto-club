@@ -65,18 +65,6 @@ type StoreCandidate = {
   lastReviewedAt?: string;
 };
 
-const STATUS_OPTIONS = [
-  { value: 'pending', label: '審査中' },
-  { value: 'approved', label: '掲載OK' },
-  { value: 'rejected', label: '掲載不可' },
-];
-
-const REWARD_STATUS_OPTIONS = [
-  { value: 'pending', label: '未処理' },
-  { value: 'ready', label: '送付準備中' },
-  { value: 'sent', label: '送付済み' },
-];
-
 const WORK_TYPE_OPTIONS = [
   { value: '在籍', label: '在籍' },
   { value: '出稼ぎ', label: '出稼ぎ' },
@@ -214,15 +202,7 @@ export function AdminSurveyEditor({ initialSurvey, mode = 'edit' }: AdminSurveyE
     })),
     rating: (initialSurvey.rating ?? '').toString(),
   });
-  const [statusForm, setStatusForm] = useState({
-    status: initialSurvey.status,
-    statusNote: initialSurvey.statusNote ?? '',
-    reviewedBy: initialSurvey.reviewedBy ?? '',
-    rewardStatus: initialSurvey.rewardStatus,
-    rewardNote: initialSurvey.rewardNote ?? '',
-  });
   const [savingContent, setSavingContent] = useState(false);
-  const [savingStatus, setSavingStatus] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [successLink, setSuccessLink] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -269,17 +249,6 @@ export function AdminSurveyEditor({ initialSurvey, mode = 'edit' }: AdminSurveyE
     [survey],
   );
 
-  const statusBaseline = useMemo(
-    () => ({
-      status: survey.status,
-      statusNote: survey.statusNote ?? '',
-      reviewedBy: survey.reviewedBy ?? '',
-      rewardStatus: survey.rewardStatus,
-      rewardNote: survey.rewardNote ?? '',
-    }),
-    [survey],
-  );
-
   const isContentDirty = useMemo(() => {
     return Object.entries(contentBaseline).some(([key, value]) => {
       if (key === 'imageUrls') {
@@ -291,13 +260,6 @@ export function AdminSurveyEditor({ initialSurvey, mode = 'edit' }: AdminSurveyE
       return formValue !== value;
     });
   }, [contentBaseline, form]);
-
-  const isStatusDirty = useMemo(() => {
-    return Object.entries(statusBaseline).some(([key, value]) => {
-      const formValue = statusForm[key as keyof typeof statusForm];
-      return formValue !== value;
-    });
-  }, [statusBaseline, statusForm]);
   const submitLabel = isCreateMode ? '登録する' : '更新する';
   const submitSavingLabel = isCreateMode ? '登録中…' : '保存中…';
 
@@ -369,14 +331,6 @@ export function AdminSurveyEditor({ initialSurvey, mode = 'edit' }: AdminSurveyE
         return;
       }
       setForm((prev) => ({ ...prev, [name]: value }));
-    },
-    [],
-  );
-
-  const handleStatusChange = useCallback(
-    (event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-      const { name, value } = event.target;
-      setStatusForm((prev) => ({ ...prev, [name]: value }));
     },
     [],
   );
@@ -639,61 +593,6 @@ export function AdminSurveyEditor({ initialSurvey, mode = 'edit' }: AdminSurveyE
       }
     },
     [form, survey.id, isCreateMode, router],
-  );
-
-  const handleStatusSave = useCallback(
-    async (event: FormEvent) => {
-      event.preventDefault();
-      if (!API_BASE) {
-        setError('API_BASE_URL が未設定です');
-        return;
-      }
-      setSavingStatus(true);
-      setMessage(null);
-      setError(null);
-      try {
-        const payload = {
-          status: statusForm.status,
-          statusNote: statusForm.statusNote,
-          reviewedBy: statusForm.reviewedBy,
-          rewardStatus: statusForm.rewardStatus,
-          rewardNote: statusForm.rewardNote,
-        };
-
-        const response = await fetch(`${API_BASE}/api/admin/surveys/${survey.id}/status`, {
-          method: 'PATCH',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(payload),
-        });
-
-        if (!response.ok) {
-          const data = await response.json().catch(() => null);
-          const message =
-            data && typeof data === 'object' && data !== null && 'error' in data
-              ? (data as { error: string }).error
-              : `ステータスの更新に失敗しました (${response.status})`;
-          throw new Error(message);
-        }
-
-        const updated = (await response.json()) as AdminSurvey;
-        setSurvey(updated);
-        setStatusForm({
-          status: updated.status,
-          statusNote: updated.statusNote ?? '',
-          reviewedBy: updated.reviewedBy ?? '',
-          rewardStatus: updated.rewardStatus,
-          rewardNote: updated.rewardNote ?? '',
-        });
-        setMessage('ステータスを更新しました');
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'ステータスの更新に失敗しました');
-      } finally {
-        setSavingStatus(false);
-      }
-    },
-    [survey.id, statusForm],
   );
 
   return (
@@ -1165,91 +1064,6 @@ export function AdminSurveyEditor({ initialSurvey, mode = 'edit' }: AdminSurveyE
           </div>
         </form>
       </section>
-
-      {!isCreateMode && (
-        <section className="space-y-4 rounded-2xl border border-slate-100 bg-white p-6 shadow-sm">
-          <header className="space-y-1">
-            <h2 className="text-lg font-semibold text-slate-900">ステータス・報酬管理</h2>
-            <p className="text-sm text-slate-500">審査メモや PayPay 送付状況を更新してください。</p>
-          </header>
-
-          <form className="grid gap-4" onSubmit={handleStatusSave}>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <label className="space-y-1 text-sm">
-              <span className="font-semibold text-slate-700">審査ステータス</span>
-              <select
-                name="status"
-                value={statusForm.status}
-                onChange={handleStatusChange}
-                className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-pink-400 focus:outline-none"
-                required
-              >
-                {STATUS_OPTIONS.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label className="space-y-1 text-sm">
-              <span className="font-semibold text-slate-700">審査担当</span>
-              <input
-                name="reviewedBy"
-                value={statusForm.reviewedBy}
-                onChange={handleStatusChange}
-                className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-pink-400 focus:outline-none"
-              />
-            </label>
-            <label className="space-y-1 text-sm sm:col-span-2">
-              <span className="font-semibold text-slate-700">審査メモ</span>
-              <textarea
-                name="statusNote"
-                value={statusForm.statusNote}
-                onChange={handleStatusChange}
-                rows={3}
-                className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-pink-400 focus:outline-none"
-              />
-            </label>
-            <label className="space-y-1 text-sm">
-              <span className="font-semibold text-slate-700">報酬ステータス</span>
-              <select
-                name="rewardStatus"
-                value={statusForm.rewardStatus}
-                onChange={handleStatusChange}
-                className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-pink-400 focus:outline-none"
-                required
-              >
-                {REWARD_STATUS_OPTIONS.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label className="space-y-1 text-sm">
-              <span className="font-semibold text-slate-700">報酬メモ</span>
-              <textarea
-                name="rewardNote"
-                value={statusForm.rewardNote}
-                onChange={handleStatusChange}
-                rows={3}
-                className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-pink-400 focus:outline-none"
-              />
-            </label>
-          </div>
-
-            <div className="flex justify-end">
-              <button
-                type="submit"
-                className="rounded-full bg-pink-600 px-4 py-2 text-sm font-semibold text-white shadow hover:bg-pink-500 disabled:opacity-60"
-                disabled={savingStatus || !isStatusDirty}
-              >
-                {savingStatus ? '更新中…' : 'ステータスを更新する'}
-              </button>
-            </div>
-          </form>
-        </section>
-      )}
 
       <section className="rounded-2xl border border-slate-100 bg-white p-6 shadow-sm">
         <h2 className="text-lg font-semibold text-slate-900">メタ情報</h2>

@@ -2,6 +2,7 @@ import Link from 'next/link';
 
 import { MetricCard, StarDisplay } from '@/components/common/metrics';
 import { StorePhotoGallery } from '@/components/stores/store-photo-gallery';
+import { BreadcrumbLabelSetter } from '@/components/common/breadcrumb-label-setter';
 import type { SurveyDetail } from '@/types/survey';
 import { formatDateTime, formatRelativeVisitedPeriod } from '@/utils/date';
 
@@ -16,6 +17,7 @@ export const SurveyDetailContent = ({ survey }: SurveyDetailProps) => {
 
   return (
     <article className="space-y-6 rounded-3xl border border-slate-100 bg-white p-6 shadow-sm">
+      <BreadcrumbLabelSetter label={survey.storeName} />
       <header className="space-y-2">
         <div className="flex flex-wrap items-center gap-2 text-xs font-semibold text-pink-600">
           <Link

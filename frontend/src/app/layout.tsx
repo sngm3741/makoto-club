@@ -5,6 +5,8 @@ import { Header } from '@/components/layout/header';
 import { Footer } from '@/components/layout/footer';
 import { TwitterLoginHandler } from '@/components/twitter/twitter-login-handler';
 import { SITE_NAME } from '@/config/site';
+import { Breadcrumbs } from '@/components/common/breadcrumbs';
+import { BreadcrumbProvider } from '@/components/common/breadcrumb-context';
 
 import './globals.css';
 
@@ -55,13 +57,18 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} min-h-screen bg-slate-50 text-slate-900 antialiased`}
       >
         <TwitterLoginHandler />
-        <div className="flex min-h-screen flex-col">
-          <Header />
-          <main className="flex-1">
-            <div className="mx-auto w-full max-w-5xl px-4 py-8">{children}</div>
-          </main>
-          <Footer />
-        </div>
+        <BreadcrumbProvider>
+          <div className="flex min-h-screen flex-col">
+            <Header />
+            <main className="flex-1">
+              <div className="mx-auto w-full max-w-5xl px-4 py-8">
+                <Breadcrumbs />
+                {children}
+              </div>
+            </main>
+            <Footer />
+          </div>
+        </BreadcrumbProvider>
       </body>
     </html>
   );
