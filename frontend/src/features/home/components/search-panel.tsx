@@ -7,9 +7,9 @@ export const SearchPanel = () => {
       <SectionPillTitle
         label="店舗検索"
       />
-      <SectionCard className="shadow-lg">
+      
         <SearchForm keywordParam="name" />
-      </SectionCard>
+      
     </section>
   );
 };

@@ -37,7 +37,7 @@ export const SearchForm = ({
   return (
     <form
       onSubmit={handleSubmit}
-      className="flex flex-col gap-3 rounded-3xl border border-slate-100 bg-white p-6 shadow-lg"
+      className="flex flex-col gap-3 rounded-3xl border border-slate-100 bg-white p-6 shadow-lg shadow-lg"
     >
       <div className="space-y-1">
         <label className="text-sm font-semibold text-slate-700" htmlFor="keyword">

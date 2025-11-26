@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { notFound } from 'next/navigation';
 
 import { AdminStoreEditor } from '@/components/admin/admin-store-editor';
@@ -36,6 +37,15 @@ export default async function AdminStoreDetailPage({ params }: PageProps) {
   const store = await fetchStoreDetail(id);
   return (
     <div className="mx-auto w-full max-w-4xl space-y-6 px-4 py-8">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h1 className="text-xl font-semibold text-slate-900">店舗詳細 / 編集</h1>
+        <Link
+          href={`/admin/surveys/new?storeId=${encodeURIComponent(id)}`}
+          className="rounded-full bg-pink-600 px-4 py-2 text-sm font-semibold text-white shadow hover:bg-pink-500"
+        >
+          アンケートを追加
+        </Link>
+      </div>
       <AdminStoreEditor initialStore={store} />
     </div>
   );

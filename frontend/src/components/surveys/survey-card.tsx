@@ -41,7 +41,7 @@ export const SurveyCard = ({ survey }: SurveyCardProps) => {
       tabIndex={0}
       onClick={handleNavigateDetail}
       onKeyDown={handleKeyDown}
-      className="flex cursor-pointer flex-col gap-4 rounded-2xl border border-slate-100 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-pink-300"
+      className="flex cursor-pointer flex-col gap-4 rounded-2xl border border-slate-100 bg-white p-5 shadow-lg transition hover:-translate-y-0.5 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-pink-300"
       aria-label={`${survey.storeName}のアンケート詳細`}
     >
       <div className="flex items-center justify-between text-xs text-slate-500">

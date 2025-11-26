@@ -43,12 +43,6 @@ export const StoreList = ({ stores, loading }: StoreListProps) => (
                   {store.genre ? ` / ${store.genre}` : ''}
                 </p>
               </div>
-              <Link
-                href={`/admin/surveys/new?storeId=${store.id}`}
-                className="rounded-full bg-pink-50 px-3 py-1 text-xs font-semibold text-pink-600 hover:bg-pink-100"
-              >
-                アンケートを追加
-              </Link>
             </div>
             <div className="flex flex-wrap gap-3 text-xs text-slate-500">
               <span>平均評価: {store.averageRating.toFixed(1)}</span>
